@@ -26,3 +26,77 @@ int main() {
     fclose(arq); // fecha o arquivo (importante!)
     return 0;
 }
+
+
+
+-------------------------------------------------------------------------------
+
+//  experimento de parser manual (ainda incompleto e depois comentado)
+
+    void seila(char str[]){
+
+    char** array = malloc(sizeof(char*)*10);
+    for(int i = 0; i < 10; i ++){
+        array[i] =  malloc(sizeof(char)*50);
+        }
+    
+    
+    int p = 0;
+    int pos = 0;
+    for(int k = 0; k < 10; k++){
+    char campo[50];
+    int a = 0;
+        for(int i = pos; i < strlen(str); i++){
+            if (str[i] == ','){
+                if (pos == 0){
+                    strcpy(array[p], "Semnada");
+                    p++;
+                    pos++;
+                    i = strlen(str);
+                }
+
+                else if(str[i+1] == '\n' || str[i+1] == ','){
+                    strcpy(array[p], "Semnada");
+                    p++;
+                    pos++;
+                    i = strlen(str);
+                }
+                else if(str[i+1] == ' '){
+                    campo[a] = str[i];
+                    a++;
+                    pos++; 
+                }
+                // else{
+                //     campo[a] = str[i];
+                //     a++;
+                //     pos++;
+                // }
+            }
+            else{
+                campo[a] = str[i];
+                a++;
+                pos++;
+                if(str[i+1] == ',' && str[i+2] != ' '){
+                    campo[a] = '\0';
+                    strcpy(array[p], campo);
+                    p++;
+                    a = 0;
+                    i = strlen(str);
+                    pos++;
+                }
+                else if(str[i+1] == '\n'){
+                    campo[a] = '\0';
+                    strcpy(array[p], campo);
+                    i = strlen(str);
+                }
+            }
+        }   
+    }
+    for(int i = 0; i < 10; i++){
+        printf("%s ", array[i]);
+    }  
+}
+
+int main(){
+seila(",,Summer,Ten,nis,12,FRA,,,False");
+}
