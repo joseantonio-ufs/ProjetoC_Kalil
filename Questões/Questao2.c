@@ -110,6 +110,21 @@ int main(){
     puts("Error opening file");
   }
 
+    //Criação de um array de structs do tipo Pais
+  Pais  listaDePaises[10];
+
+  //Entrada de dados dos países escolhidos e inicialização dos campos da struct
+  printf("Escolha o 10 países que você almeija obter a razão: ");
+  for(int i = 0;i<10;i++){
+    scanf(" %[^\n]", listaDePaises[i].NOC);
+    listaDePaises[i].numeroMedalhas = 0;
+    listaDePaises[i].numeroAtletas = 0;
+  }
+
+  //Entrada do ano de determinada Olimpíada
+  printf("Digite o ano escolhido: ");
+  scanf("%d", &anoEscolhido);
+
      //Sessão para encerramento do arquivo
   fclose(results);
   
