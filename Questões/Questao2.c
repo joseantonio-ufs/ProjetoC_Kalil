@@ -102,4 +102,15 @@ Atleta leitura(char str[]){
 }
 
 
-int main(){}
+int main(){
+      //Aqui ocorre a abertura do arquivo results.csv e o teste para confirmar que o arquivo abriu mesmo 
+  FILE *results = fopen("results.csv","r");
+
+  if(results == NULL){
+    puts("Error opening file");
+  }
+
+     //Sessão para encerramento do arquivo
+  fclose(results);
+  
+}
