@@ -9,4 +9,4 @@ Questões escolhidas:
 
 🥉 Escolha uma edição aleatória das Olimpíadas e liste os atletas mais velhos por modalidade esportiva, além disso liste o total de Olimpíadas competidas pelos 3 mais velhos desta edição escolhida.
 
-🥇+🥉 Escolha 4 países e compare a relação hitórica entre o número de mulheres e homens medalhistas ao longo de todas as edições para cada país escolhido. Se possível plote um gráfico com a curva de cada país.  
+🥇+🥉 Escolha 4 países e compare o número de mulheres e homens medalhistas ao longo de todas as edições para cada país escolhido. Se possível plote um gráfico destacando essa dinâmica entre cada país.  
