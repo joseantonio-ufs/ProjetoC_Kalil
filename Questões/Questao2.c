@@ -101,6 +101,28 @@ Atleta leitura(char str[]){
   return atleta;
 }
 
+//implementação da função de comparação baseada no cálculo da razão, para ordenação dos países 
+int comparaPaises(const void* a, const void* b){
+  const Pais* p1 = (Pais*) a;
+  const Pais* p2 = (Pais*) b;
+
+  float razao1, razao2;
+
+  if(p1->numeroAtletas > 0){
+    razao1 = p1->numeroMedalhas/p1->numeroAtletas;
+  }
+
+  if(p2->numeroAtletas>0){
+     razao2 = p2->numeroMedalhas/p2->numeroAtletas;
+  }
+
+  //Função ordenação em ordem decrescente
+  if(razao1>razao2){
+    return -1;
+  }else{
+    return 1;
+  }
+}
 
 int main(){
       //Aqui ocorre a abertura do arquivo results.csv e o teste para confirmar que o arquivo abriu mesmo 
