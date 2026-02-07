@@ -5,149 +5,222 @@
 #include <unistd.h>
 #include <ctype.h>
 
-// mapa - > itero results e pego todos os atletas (mesmo repetidos), pego seu id, ano, nome e esporte. mapeio o bios por hashkey, associo ao indice e puxo a data de nascimento.  atribuo a idade ao atleta. meto um qsort e acabou;
+// A ideia geral é:
+// percorrer o arquivo results.csv coletando participações (mesmo repetidas),
+// associar cada atleta ao seu id, buscar o ano de nascimento no bios.csv,
+// calcular a idade em cada olimpíada e depois ordenar.
 
-// struct pra salvar o que importa de cada atleta
+// Estrutura que representa uma participação do atleta em uma olimpíada
 typedef struct {
-char esporte[100];
-char atletaNome[150];
-int Id;
-int anoOlimpiada;
-int idade;
+    char esporte[100];
+    char atletaNome[150];
+    int Id;
+    int anoOlimpiada;
+    int idade;
 } Atleta;
 
-
-// struct pra salvar ano de nascimento e id para cruzar dados com o arquivo bios e extrais informações necessárias
+// Estrutura reduzida apenas com as informações necessárias do bios.csv
 typedef struct {
-char ano[10];
-int atletaId;
+    char ano[10];
+    int atletaId;
 } biosAtleta;
 
 
-// Função pra quebrar cada linha do csv em seus método, baseado na posição das vírgulas
+// Parser de uma linha do results.csv
 Atleta Parser(char str[]){
+    // Exemplo de linha:
+    // 1912 Summer Olympics,"Singles, Men (Olympic)",,=17,,Jean-François Blanchy,1,FRA,Tennis,,
 
-   // Aqui define onde as vírgulas aparecem pra separar as colunas do CSV
     int posVirgulas[10];
     int camposLidos = 0;
-    int aspas = 0; // especie de interruptor feito para evitar vigulas dentro do próprio campo (apatrentemente o csv só tem virgulas dentro dos campos entre aspas)
+    int aspas = 0;
 
-
-   for(int i = 0; i < strlen(str); i++){
+    // Varre a linha identificando apenas as vírgulas que realmente separam colunas,
+    // ignorando aquelas que aparecem dentro de campos entre aspas
+    for(int i = 0; i < strlen(str); i++){
         if (str[i] == '"')
             aspas = !aspas;
-        if ((str[i] == ',' && str[i+1] != ' ')){
-            if(aspas){}
-            else{
-                posVirgulas[camposLidos++] = i;/// Loop de quebra. Se encontrar uma virgula (que esteja com aspa deligada), e perceber que o próximo espaço
-                // não é vazio, então incrementa
-            }
+
+        if (str[i] == ',' && !aspas){
+            posVirgulas[camposLidos++] = i;
         }
     }
  
-    Atleta comp; // criamos o atleta
+    Atleta comp;
 
-// Puxo o ano da Olimpíada direto no sscanf pois é o primeiro campo e sempre aparece, então não tem risco de erro
-    sscanf(str,"%d",&comp.anoOlimpiada);
+    // O ano da olimpíada aparece sempre no início da linha
+    sscanf(str, "%d", &comp.anoOlimpiada);
+    
+    // Extrai o nome do atleta entre as vírgulas correspondentes
+    if(posVirgulas[4] + 1 == posVirgulas[5]){
+        strcpy(comp.atletaNome, "Vazio");
+    } else {
+        for (int i = posVirgulas[4] + 1, z = 0; i < posVirgulas[5]; i++, z++){
+            comp.atletaNome[z] = str[i];
+            comp.atletaNome[z+1] = '\0';
+        }
+    }
 
-// a partir daqui as extrações são com base nas posições das vírgulas. note que se as virgulas estiverem lado a lacvo o campo é considerado vazio
-    
-// Se o campo de nome tiver vazio já copia como "Vazio". Se não, copia caractere a caractere com laço
-    if(posVirgulas[4] + 1 == posVirgulas[5]){strcpy(comp.atletaNome, "Vazio");}
-    else{
-        for (int i = posVirgulas[4] + 1, z = 0; i < posVirgulas[5]; i++, z++){
-            comp.atletaNome[z] = str[i];
-            comp.atletaNome[z+1] = '\0';
-        }
-    }
+    // Extrai o ID do atleta e converte para inteiro
+    char Id[10];
+    if(posVirgulas[5] + 1 == posVirgulas[6]){
+        comp.Id = -1;
+    } else {
+        for (int i = posVirgulas[5] + 1, z = 0; i < posVirgulas[6]; i++, z++){
+            Id[z] = str[i];
+            Id[z+1] = '\0';
+        }
+        comp.Id = atoi(Id);
+    }
 
-// Extraio o id do atleta. Se não tiver nada entre as vírgulas, vira -1.
-    char Id[10];
-    if(posVirgulas[5] + 1 == posVirgulas[6]){comp.Id = -1;}
-    else{
-        for (int i = posVirgulas[5] + 1, z = 0; i < posVirgulas[6]; i++, z++){
-            Id[z] = str[i];
-            Id[z+1] = '\0';
-        }
-        comp.Id = atoi(Id);
-    }
+    // Extrai o nome do esporte associado àquela participação
+    if(posVirgulas[7] + 1 == posVirgulas[8]){
+        strcpy(comp.esporte, "Vazio");
+    } else {
+        for (int i = posVirgulas[7] + 1, z = 0; i < posVirgulas[8]; i++, z++){
+            // Copia o campo esporte caractere por caractere
+            // e mantém a string sempre terminada corretamente
+            comp.esporte[z] = str[i];
+            comp.esporte[z+1] = '\0';
+        }
+    }
 
-    // a mesma ideia para extrais esportes
-    if(posVirgulas[7] + 1 == posVirgulas[8]){strcpy(comp.esporte, "Vazio");}
-    else{
-        for (int i = posVirgulas[7] + 1, z = 0; i < posVirgulas[8]; i++, z++){
-            comp.esporte[z] = str[i];
-            comp.esporte[z+1] = '\0';
-        }
-    }
-
-    return comp;
+    return comp;
 }
 
 
-
-// Parser pra carregar as datas de nascimento dos atletas, dats encontradas com base nos ids por serem únicos
+// Parser de uma linha do bios.csv
 biosAtleta ParserBios(char str[]){
 
-    int posVirgulas[15];
-    int camposLidos = 0;
-    int aspas = 0;
+    int posVirgulas[15];
+    int camposLidos = 0;
+    int aspas = 0;
 
-    // Mesma estratégia das vírgulas do parser anterior
-    for(int i = 0; i < strlen(str); i++){
-        if (str[i] == '"')
-        aspas = !aspas;
-        if ((str[i] == ',' && str[i+1] != ' ')){
-            if(aspas){}
-            else{
-            posVirgulas[camposLidos++] = i;
-            }
-        }
-    }
- 
-    biosAtleta comp; // criamos o objeto que salva os dados de bios atleta
+    // Mesmo processo de identificação das vírgulas válidas
+    for(int i = 0; i < strlen(str); i++){
+        if (str[i] == '"')
+            aspas = !aspas;
 
-    // Pego o ID pra servir de chave pro cruzamento.
-    char Id[10];
-    if(posVirgulas[6] + 1 == posVirgulas[7]){comp.atletaId = -1;}
-    else{
-        for (int i = posVirgulas[6] + 1, z = 0; i < posVirgulas[7]; i++, z++){
-            Id[z] = str[i];
-            Id[z+1] = '\0';
-        }
-        comp.atletaId = atoi(Id);
-    }
+        if (str[i] == ',' && !aspas){
+            posVirgulas[camposLidos++] = i;
+        }
+    }
+ 
+    biosAtleta comp;
+
+    // Captura o ID do atleta presente no bios.csv
+    char Id[10];
+    if(posVirgulas[6] + 1 == posVirgulas[7]){
+        comp.atletaId = -1;
+    } else {
+        for (int i = posVirgulas[6] + 1, z = 0; i < posVirgulas[7]; i++, z++){
+            Id[z] = str[i];
+            Id[z+1] = '\0';
+        }
+        comp.atletaId = atoi(Id);
+    }
+
+    // Campo de nascimento vem como texto livre, por exemplo:
+    // "1 April 1969 in Meulan, Yvelines (FRA)"
+    char nascimento[150];
+    if(posVirgulas[3] + 1 == posVirgulas[4]){
+        strcpy(comp.ano, "Vazio");
+    } else {
+        for (int i = posVirgulas[3] + 1, z = 0; i < posVirgulas[4]; i++, z++){
+            nascimento[z] = str[i];
+            nascimento[z+1] = '\0';
+        }
+
+        // Procura manualmente por uma sequência de 4 dígitos,
+        // assumindo que ela representa o ano de nascimento
+        strcpy(comp.ano, "Vazio");
+        char anoCopiado[5];
+        int TotalIteracoes = strlen(nascimento);
+
+        for(int s = 0; s < TotalIteracoes - 3; s++){
+            if(isdigit(nascimento[s]) &&
+               isdigit(nascimento[s+1]) &&
+               isdigit(nascimento[s+2]) &&
+               isdigit(nascimento[s+3])){
+
+                anoCopiado[0] = nascimento[s];
+                anoCopiado[1] = nascimento[s+1];
+                anoCopiado[2] = nascimento[s+2];
+                anoCopiado[3] = nascimento[s+3];
+                anoCopiado[4] = '\0';
+
+                strcpy(comp.ano, anoCopiado);
+                break;
+            }
+        }
+    }
+
+    return comp;
+}
 
 
-    // Aqui pego o ano de nascimento com base na condição de haver 4 digitos seguidos. isso ocorre porque o campo nascimento pode aparecer
-    // de 4 formas diferentes, incluindo sem o ano e só o local
-    char nascimento[150];
-    if(posVirgulas[3] + 1 == posVirgulas[4]){strcpy(comp.ano,"Vazio");}
-    else{
-        for (int i = posVirgulas[3] + 1, z = 0; i < posVirgulas[4]; i++, z++){
-            nascimento[z] = str[i];
-            nascimento[z+1] = '\0';
-        }
-        // Se não achar o ano, coloco 3000 pra o cara ser cotado com ano negatico no cáuculo da idade. assim, ficando em último na ordenação
-        comp.ano = 3000;
-        for(int s = 0; s < strlen(nascimento) - 3; s++){
-            if(isdigit(nascimento[s])){
-                if(isdigit(nascimento[s+1])){
-                    if(isdigit(nascimento[s+2])){
-                        if(isdigit(nascimento[s+3])){
-                            char anoReal[5];
-                            anoReal[0] = nascimento[s];
-                            anoReal[1] = nascimento[s+1];
-                            anoReal[2] = nascimento[s+2];// necessario que 4 caracteres seguidos sejam digitos
-                            anoReal[3] = nascimento[s+3];
-                            anoReal[4] = '\0';
-                            // Achei o ano, converto e saio do loop.
-                            comp.ano = atoi(anoReal);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return comp;
+int main(){
+
+    FILE *arq = fopen("results.csv", "r");
+    FILE *bios = fopen("bios.csv", "r");
+
+    // Verificação básica de abertura dos arquivos
+    if (arq == NULL || bios == NULL) {
+        puts("Error opening file");
+        return 1;
+    }
+    
+    int cont = 0;
+    int capacidade = 5;
+
+    // Vetor dinâmico para armazenar todas as participações
+    Atleta* competidores = malloc(sizeof(Atleta) * capacidade);
+    
+    char ch[3000];
+    fgets(ch, sizeof(ch), arq); // descarta o cabeçalho
+
+    // Leitura do results.csv com alocando espaço quando necessário (semelhante arraylist do Java)
+    while (fgets(ch, sizeof(ch), arq) != NULL){
+
+        if ((cont + 1) == capacidade){
+            capacidade *= capacidade;
+            Atleta* temp = realloc(competidores, sizeof(Atleta) * capacidade);
+            competidores = temp;
+        }
+
+        competidores[cont++] = Parser(ch);
+    }
+
+    int capacidade2 = 3;
+    int num = 0;
+
+    // Vetor dinâmico para armazenar dados do bios.csv
+    biosAtleta* lista = malloc(sizeof(biosAtleta) * capacidade2);
+
+    char newPala[500];
+    fgets(newPala, sizeof(newPala), bios); // descarta o cabeçalho
+
+    while(fgets(newPala, sizeof(newPala), bios) != NULL){ 
+
+        if ((num + 1) == capacidade2){
+            capacidade2 *= capacidade2;
+            biosAtleta* temp = realloc(lista, sizeof(biosAtleta) * capacidade2);
+            lista = temp;
+        }
+
+        lista[num++] = ParserBios(newPala);
+    }
+
+    // Cálculo da idade do atleta na olimpíada correspondente
+    for(int k = 0; k < cont; k++){
+        if(strcmp(lista[competidores[k].Id].ano, "Vazio") == 0){
+            competidores[k].idade = 0;
+        } else {
+            competidores[k].idade =
+                competidores[k].anoOlimpiada -
+                atoi(lista[competidores[k].Id].ano);
+        }
+    }
+    
+    return 0;
 }
