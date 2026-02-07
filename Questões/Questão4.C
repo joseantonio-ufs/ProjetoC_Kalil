@@ -2,7 +2,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-
+//Nota: pensei em abstrair o que há de enssencial entre os parsers nas funções e criar outra
+//função parser para chamar ela nas demais funções ao usar, mas pesquisando imaginei que isso
+//apesar de diminuir código escrito podria adicioanr complexidade de operações desnecessarias
+//e poderia causar problemas de overhead ao repetir várias operações de salvar contexto e
+//executar funções, além de que apesar das semlhanças o trabalho de criar um parser
+//personalizavel em funções que fazem coisas diferentes também complcairia desnecessariamente
+//também precisaria de estruturas de ponteiros e callbacks que podem ser evitados
 
 //criar um array giagntesco armazenando os dados dos atletas foi mais conveniente aqui
 //se não aramzenar os dados no array seriam feitas muitas iterações desnecessárisa nos csvs
