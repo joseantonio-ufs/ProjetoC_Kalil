@@ -2,93 +2,112 @@
 //, além disso liste o total de Olimpíadas competidas pelos 3 mais velhos desta edição escolhida.
 
 #include <stdio.h>
-#include <string.h>//////////////////////// depois de quebrar a cabeça com 3 versões diferentes de parses essa saiu, quebrando cada linha do csv em 11 campos armazenados em arrays de strings armazenados dinâmicamente
-// breve comentarei este e farei a resolução da questão
+#include <string.h>
 #include <stdlib.h>
-
+#include <unistd.h>
+#include <ctype.h>
 
 typedef struct {
-int ano;
-char tipo[10];
-char esporte[20];
-char evento[20];
-char atletaNome[40];
-int atletaId[20];
-char noc[10];
-char time[40];
-int posicao;
-int empate;
-char medalha[8];
+    int ano;
+    char esporte[100];
+    char atletaNome[150];///// struct para salvar os campos interessantes a questão 
+    int atletaId;
 } Atleta;
 
+////// alteração de parser para arquivos e definicção do parser como tipo da struct (objetivo de retornar um atleta por passagem no parser)
+Atleta Parser(char str[]){
 
-
-void seila(char str[]){
-
-    char** array = malloc(sizeof(char*)*11);
-    for(int i = 0; i < 11; i ++){
-        array[i] =  malloc(sizeof(char)*150);
-    }
-    
-
-    int posIni = -1;
-    int p[11];
+    // Aqui define onde as vírgulas aparecem pra separar as colunas do CSV
+    int posVirgulas[10];
     int camposLidos = 0;
+    int aspas = 0; // especie de interruptor feito para evitar vigulas dentro do próprio campo (apatrentemente o csv só tem virgulas dentro dos campos entre aspas)
 
+    
     for(int i = 0; i < strlen(str); i++){
-        if ((str[i] == ',' && str[i+1] != ' ') || str[i] == '\n'){
-            p[camposLidos++] = i;
+        if (str[i] == '"')
+            aspas = !aspas;
+        if ((str[i] == ',' && str[i+1] != ' ')){
+            if(aspas){}
+            else{
+                posVirgulas[camposLidos++] = i;/// Loop de quebra. Se encontrar uma virgula (que esteja com aspa deligada), e perceber que o próximo espaço
+                // não é vazio, então incrementa
+            }
         }
     }
-    // for(int i = 0; i < 11; i++){
-    //     printf("%d ", p[i]);
-    // } 
+ 
+    Atleta comp; // criamos o atleta
 
-    camposLidos = 0;
 
-    for(int i = 0; i <= 10; i++){
-        char campo[150];
-        if (p[i] - posIni <= 1){
-            strcpy(array[camposLidos++], "Vazio");
-            posIni = p[i];
+    // Pegando os 4 primeiros caracteres da linha que são sempre o ano e passando pro atleta
+    char ano[5];
+    for (int i = 0, z = 0; i < 4; i++, z++){
+            ano[z] = str[i];
+            ano[z+1] = '\0';
         }
-        else{
-            for(int k = posIni+1, z = 0; k < p[i]; k++, z++){
-                campo[z] = str[k];
-                campo[z+1] = '\0';
-            }
-            strcpy(array[camposLidos++], campo);
-            posIni = p[i];
-        }
-    } 
+    comp.ano = atoi(ano);
 
-    printf("\n");
-    for(int i = 0; i <= 10; i++){
-        printf("%s ", array[i]);
-    } 
-    free(array); 
+
+    // Verificando se o campo do nome tá vazio ou se tem conteúdo entre as vírgulas 4 e 5
+    if(posVirgulas[4] + 1 == posVirgulas[5]){strcpy(comp.atletaNome, "Vazio");}
+    else{
+        for (int i = posVirgulas[4] + 1, z = 0; i < posVirgulas[5]; i++, z++){
+            comp.atletaNome[z] = str[i];
+            comp.atletaNome[z+1] = '\0';
+        }
+    }
+
+    // Mesmo esquema aqui, mas pegando o id do atleta e convertendo pra inteiro
+    char Id[10];
+    if(posVirgulas[5] + 1 == posVirgulas[6]){comp.atletaId = -1;}
+    else{
+        for (int i = posVirgulas[5] + 1, z = 0; i < posVirgulas[6]; i++, z++){
+            Id[z] = str[i];
+            Id[z+1] = '\0';
+        }
+        comp.atletaId = atoi(Id);
+    }
+
+    // Finalizando com o nome do esporte
+    if(posVirgulas[8] - posVirgulas[7] <= 1){strcpy(comp.esporte, "Vazio");}
+    else{
+        for (int i = posVirgulas[7] + 1, z = 0; i < posVirgulas[8]; i++, z++){
+            comp.esporte[z] = str[i];
+            comp.esporte[z+1] = '\0';
+        }
+    }
+
+    // note que sempre há um tratamento para caso o campo seja vazio
+
+   //---------------------------------------------------------------------------------------
+    
+    // Esse printf é só pra testar se o parser tá pegando
+    printf("Id: %d | Nome: %s | Ano: %d | Esporte: %s\n", comp.atletaId, comp.atletaNome, comp.ano, comp.esporte);
+    return comp;
 }
 
 int main() {
-
+    // Definindo um ano de leitura, futuramente será leitura pra o usuário
+    int anoSorteado = 1912;
+    
     // processo básico de abertura de arquivo criando um ponteiro do tipo FILE e passando como argumento o diretório do csv e ao lado o modo de uso
     // r - read a - escreve (final) w - sobrescreve ------ r+ w+ a+ escrever e lem ao mesmo tempo
     //(cuidado com as barras invertidas)
     // devem ser duplas para não ver como caractere de escape
-        FILE *arq = fopen("C:\\Users\\joser\\Downloads\\Projota\\results.csv", "r");
+    FILE *arq = fopen("C:\\Users\\joser\\Downloads\\Projota\\results.csv", "r"); // ponteiro para o arquivo
     
-        if (arq == NULL) {
-            puts("Error opening file"); // retorna um erro caso o ponteiro que receberia o arquivo seja NULL
-            return 1;
-        }
-    
-        
-        char ch[350];
-        while (fgets(ch, sizeof(ch), arq) != NULL) { /// caso o ponteiro não seja NULL entramos num loop em que supomos que cada linha tenha no 
-            //máximo 200 caracteres e puxamos linha a linha do csv até o fget retornar um NULL (não pegou nada) e imprimimos tudo durante o loop
-            seila(ch);
-        }
-    
-        fclose(arq); // fecha o arquivo (importante!)
-        return 0;
+    if (arq == NULL) {
+        puts("Error opening file"); // retorna um erro caso o ponteiro que receberia o arquivo seja NULL
+        return 1;
     }
+
+
+    
+    char ch[350];
+    while (fgets(ch, sizeof(ch), arq) != NULL) { /// caso o ponteiro não seja NULL entramos num loop em que supomos que cada linha tenha no 
+        //máximo 200 caracteres e puxamos linha a linha do csv até o fget retornar um NULL (não pegou nada) e imprimimos tudo durante o loop
+        Parser(ch);
+    }
+
+    fclose(arq); // fecha o arquivo (importante!)
+    return 0;
+}
