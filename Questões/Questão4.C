@@ -19,17 +19,17 @@ void mapear_generos() {
     //zera o array para evitar lixo
     memset(generos, 0, sizeof(generos));
 
-    FILE *f = fopen("bios.csv", "r");
+    FILE *arquivo = fopen("bios.csv", "r");
     //se o arquivo não for encontrado exibe isso no print
-    if( f == NULL) {
+    if( arquivo == NULL) {
         printf("O arquivo não foi encontrado");
         exit(1);
     }
 
     char linha[4096];
-    fgets(linha, 4096, f); //pula o cabecalho
+    fgets(linha, 4096, arquivo); //pula o cabecalho
 
-    while (fgets(linha, 4096, f)) {
+    while (fgets(linha, 4096, arquivo)) {
         //lógica de parser
         //pegar só a primeira letra da string, é o suficiente para diferenciar genero
         int id_temp = -1; 
@@ -43,17 +43,17 @@ void mapear_generos() {
         //percorre a linha caractere por caractere
         while (linha[i] != '\0' && linha[i] != '\n') {
             
-            char c = linha[i];
+            char caractere = linha[i];
 
             //como existem virgulas dentro de algumas strings como em nomes e datas
             //é preciso fazer uma prevenção ara evitar cortar no meio da string
-            if (c == '\"') {
+            if (caractere == '\"') {
                 //como as aspas sempre vem em duplas
                 //então começa fora, depois entra, depois sai de novo
                 dentro_aspas = !dentro_aspas; //lógica de inversão de entrou ou saiu das aspas
             }
             //se for uma virgula fora de aspas é um separador coluna
-            else if (c == ',' && !dentro_aspas) {
+            else if (caractere == ',' && !dentro_aspas) {
                 buffer_campo[j] = '\0'; //fecha a string do campo
 
                 //aqui começa a captura dos dados
@@ -91,7 +91,7 @@ void mapear_generos() {
             //guarda caractere normal no buffer
             else {
                 if (j < 1023) {
-                    buffer_campo[j] = c;
+                    buffer_campo[j] = caractere;
                     j++;
                 }
             }
@@ -103,5 +103,5 @@ void mapear_generos() {
         }
         //while acaba
     }
-    fclose(f);
+    fclose(arquivo);
 }
