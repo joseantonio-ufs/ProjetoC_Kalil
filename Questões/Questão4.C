@@ -105,3 +105,132 @@ void mapear_generos() {
     }
     fclose(arquivo);
 }
+
+
+
+//responsavel por iterar pelo csv e pelo array para contar os medalhistas
+void contar_medalhistas(char *pais_alvo, int *resultado) {
+    //o primeiro indice conta as medalhas para homens e o segundo para mulheres
+    //define como 0 para limpar lixo ou resetar e garantir funcionamento do imcremento
+    resultado[0] = 0;
+    resultado[1] = 0;
+
+    FILE *arquivo = fopen("results.csv", "r");
+    if (arquivo == NULL) {
+        printf("Erro ao abrir results.csv\n");
+        exit(1);
+    }
+    
+    char linha[4096]; 
+    fgets(linha, 4096, arquivo); //pula o cabeçalho
+
+    while (fgets(linha, 4096, arquivo)) {
+        
+        //os dados serão guardados em variaveis temporarias (temp)
+        //minemonico pois temp é autoexlicativo e está bem explicado no comentário
+        int id_atleta = -1;
+        char noc_temp[10] = "";     
+        char medalha_temp[20] = ""; 
+
+        //variaveis do parser
+        int i = 0, j = 0, coluna_atual = 0; 
+        int dentro_aspas = 0; //importante para lidar com as aspas que vem no arquivo
+        char buffer[1024];
+
+        while (linha[i] != '\0' && linha[i] != '\n') {
+            char caractere = linha[i];
+            
+            //se for o \r do windows reinicia o loop direto
+            //serve para evitar bugs limpando \r que possam vir no buffer
+            if (caractere == '\r') {
+                i++;
+                continue;
+            }
+
+            //se for aspas aplica lógica de inversão de True/False para se estar dentro ou fora
+            //de string
+            if (caractere == '\"') {
+                dentro_aspas = !dentro_aspas;
+            }
+            
+            else if (caractere == ',' && !dentro_aspas) {
+                buffer[j] = '\0'; //fecha string
+
+                
+                //coluna 4 é a medalha, se tiver vazia então não ganhou
+                if (coluna_atual == 4) {
+                    strncpy(medalha_temp, buffer, 19);
+                }
+
+                //coluna 6 é o id do atleta, deve ser salvo e reaproveitado para depois
+                //conferir o genero, salvo no array gigante
+                else if (coluna_atual == 6) {
+                    if (buffer[0] == '\"') {
+                        id_atleta = atoi(&buffer[1]);
+                    } else {
+                        id_atleta = atoi(buffer);
+                    }
+                }
+
+                //o NOC é a coluna 7
+                else if (coluna_atual == 7) {
+                    //se tiver aspas, tira
+                    if (buffer[0] == '\"') {
+                        strncpy(noc_temp, &buffer[1], 9);
+                    } else {
+                        strncpy(noc_temp, buffer, 9);
+                    }
+                    
+                    //strchr vai encontrar o primeiro caractere igual a "
+                    //serve para limpar aspas acidentais que possam ser caoturadas
+                    //é criado um ponteiro apontando para o endereço desse caractere
+                    //depois o caractere é zerado, definido  como \0, fim da string
+                    char *ponteiro = strchr(noc_temp, '\"');
+                    if (ponteiro) {
+                        *ponteiro = 0;
+                    }
+                    
+                    //para não estender mais que o necessário é melhor usar um break
+                    //serve como otimização
+                    break; 
+                }
+
+                j = 0;
+                coluna_atual++;
+            }
+            else {
+                if (j < 1023) buffer[j++] = caractere;
+            }
+            i++;
+        }
+
+
+
+        //verificar se é o pais certo, se for diferente pula para o próximo da lista
+        if (strcmp(noc_temp, pais_alvo) != 0) {
+            continue;
+        }
+
+        //Verificar se ganhou medalha, os atletas sem medalha tem esse campo vazio(,,) no 
+        //results.csv, tambem tem que verificar se a string tem tamanho menor que 2 ou é "NA"
+        if (strlen(medalha_temp) < 2 || strcmp(medalha_temp, "NA") == 0) {
+            continue;
+        }
+
+        //Verificar o genero usando o ID
+        //essa parte vai aproveitar o array gigante que foi preenchido de forma auxiliar
+        //para economizar iterações, baseado no id do atleta medalhista
+        //confere o array de generos, cuja posiçção é igual ao ID para verificar o genero
+        if (id_atleta >= 0 && id_atleta < MAX_ID) {
+            char genero = generos[id_atleta];
+        
+            
+            if (genero == 'M') {
+                resultado[0]++;
+            } else if (genero == 'F') {
+                resultado[1]++;
+            }
+        }
+    }
+    fclose(arquivo);
+}
