@@ -185,6 +185,17 @@ int main(){
     }
   }
 
+    //Realizando a ordenação dos países baseado no valor da razão utilizando da função compara, definida logo antes do main, para descobrir quais são os 3 países mais eficientes
+  qsort(listaDePaises, 10, sizeof(Pais), comparaPaises);
+  
+  //Realizando o cálculo da razão, com a lista já ordenada, e pegando os 3 primeiros países, que são os que foram os que obtiveram as maiores razões
+  for(int i = 0; i<3; i++){
+    float razao = listaDePaises[i].numeroMedalhas/listaDePaises[i].numeroAtletas;
+
+    printf("Posição de eficiência do pais %s: %d. Valor da razão entre medalhas e atletas: %f", listaDePaises[i].NOC, i+1, razao);
+  }
+
+
      //Sessão para encerramento do arquivo
   fclose(results);
   
