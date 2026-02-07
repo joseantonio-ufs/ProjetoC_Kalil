@@ -110,9 +110,19 @@ int main(){
     puts("Error opening file");
   }
 
-    //Criação de um array de structs do tipo Pais
+  //Criação de um array de structs do tipo Pais
   Pais  listaDePaises[10];
+  //Criando variáveis que serão utilizadas futuramente na lógica do código
+  int anoEscolhido;
+  int analisandoAno;
 
+  //Aqui, é criado um array de atletas para armazenar todos os Ids, para não ocorrer o risco de ele analisar mais de um atleta de uma vez;
+  int capacidadeInicial = 10;
+  int atletasIds[capacidadeInicial];
+
+  //Essa parte irá servir para garantir que não hajam atletas repetidos para um mesmo país 
+  int IdAnterior = 0;
+ 
   //Entrada de dados dos países escolhidos e inicialização dos campos da struct
   printf("Escolha o 10 países que você almeija obter a razão: ");
   for(int i = 0;i<10;i++){
@@ -124,6 +134,34 @@ int main(){
   //Entrada do ano de determinada Olimpíada
   printf("Digite o ano escolhido: ");
   scanf("%d", &anoEscolhido);
+
+ 
+  //Implementação da lógica principal do código nesse bloco
+  char linha[2000];
+  while(fgets(linha, sizeof(linha), results)!=NULL){
+    //Pega o primeiro campo do arquivo, no caso, o ano
+    sscanf(linha, "%d", &analisandoAno);
+    
+
+    Atleta AtletaGeral = leitura(linha);
+    if(analisandoAno==anoEscolhido){
+      for(int i = 0; i<10; i++){
+          if(strcmp(listaDePaises[i].NOC, AtletaGeral.pais) == 0){
+            //Se o nome do país analisado for o mesmo da linha atual, verificar se tem medalha ou não, e se sim, incrementa o número de medalhas
+            if(strcmp(AtletaGeral.medalha, "Bronze") == 0 || strcmp(AtletaGeral.medalha, "Silver") == 0|| strcmp(AtletaGeral.medalha, "Gold") == 0){
+              listaDePaises[i].numeroMedalhas++;
+            }
+ 
+            //Ve se o atleta ja foi cadastrado, e, caso não, incrementa o número de atletas
+            if(AtletaGeral.atleta_id != IdAnterior){
+              listaDePaises[i].numeroAtletas++;
+              IdAnterior = AtletaGeral.atleta_id;
+            }
+            
+          }
+      }
+    }
+  }
 
      //Sessão para encerramento do arquivo
   fclose(results);
