@@ -10,10 +10,12 @@
 //personalizavel em funções que fazem coisas diferentes também complcairia desnecessariamente
 //também precisaria de estruturas de ponteiros e callbacks que podem ser evitados
 
+
 //criar um array giagntesco armazenando os dados dos atletas foi mais conveniente aqui
 //se não aramzenar os dados no array seriam feitas muitas iterações desnecessárisa nos csvs
 //essas iterações levariam muito tempo ou exigiriam ordenações e complexidades desnecessárias
 #define MAX_ID 150000
+
 
 //para facilitar retorno de 2 inteiros vou aramzenar o numero de medalhistas num array
 //primeiro indice contém número de homens medalhistas segundo numero de mulheres
@@ -50,6 +52,9 @@ void mapear_generos() {
         while (linha[i] != '\0' && linha[i] != '\n') {
             
             char caractere = linha[i];
+
+
+
 
             //como existem virgulas dentro de algumas strings como em nomes e datas
             //é preciso fazer uma prevenção ara evitar cortar no meio da string
@@ -241,6 +246,8 @@ void contar_medalhistas(char *pais_alvo, int *resultado) {
     fclose(arquivo);
 }
 
+
+
 //função responsável por converter nome do país no código NOC
 //isso garantemelhor precisão na busca para países que itveram mudanças durante a historia
 char* converter_nome(char nome_pais[]) {
@@ -318,84 +325,40 @@ char* converter_nome(char nome_pais[]) {
     return codigo_encontrado;
 }
 
+int main() {
+    //preenche o array
+    mapear_generos();
+    
+    int acumuladora = 0; //acumuladora que controla o loop
 
+    printf("Insira o nome de 4 países e veja a comparação de medalhas totais por genero\n");
 
+    //no loop a comparação será feita entre os 4 países, repetindo o processo
+    while (acumuladora < 4) {
+        int placar[2]; 
+        char NOC[5];
+        char pais[50];
 
-//função responsável por converter nome do país no código NOC
-//isso garantemelhor precisão na busca para países que itveram mudanças durante a historia
-char* converter_nome(char nome_pais[]) {
-    //variável estática para que não seja destruida após a execução da função
-    //armazena e retorna o código NOC desejado
-    static char codigo_encontrado[5];
+        printf("Insira o nome em inglês do pais desejado, com escrita compativel ao nome do time do pais nas olimpiadas\n");
+        fgets(pais, 50, stdin);
+        //o fgets pega o \n, isso atrapalharia a comparação, então é preciso remover o \n
+        //para isos usar o strcspn que percorre a string até achar o \n e transforma em \0
+        pais[strcspn(pais, "\n")] = 0;
 
-    //inicialmente o NOC é definido como NADA, se o pais for encontrado ele é redefinido
-    //como a variável é static, é preciso atribuir o valor a ela fora de sua definição
-    //para que possa ser resetada caso a função seja chamada mais de uma vez
-    strcpy(codigo_encontrado, "NADA");
+        strcpy(NOC, converter_nome(pais)); //converte o nome em código NOC
 
-    FILE *f = fopen("noc_regions.csv", "r");
-    //evitar bug caso não tenha arquivo
-    if (f == NULL) {
-        printf("csv não encontrado \n");
-        return codigo_encontrado;
+        //se o país for inválido, o NOC será "NADA", então nem chama a função
+        if (strcmp(NOC, "NADA")) { //se for invalido retorna 0 e não cai na condição
+            contar_medalhistas(NOC, placar); //usa o código NOC para identificar as medalhas
+            printf("%s:\n %d medalhas para Homens, %d para mulheres \n", pais, placar[0], placar[1]);
+        } else {
+            //se retornar 0, o NOC é igual a "NADA", então sai do if e cai no else
+            printf("Pais invalido\n");
+        }
+        acumuladora++;
     }
-
-    char linha[1024];
-    fgets(linha, sizeof(linha), f); //pula cabeçalho
-
-
-    while (fgets(linha, sizeof(linha), f)) {
-        //guardar em variáveis temporarias (temp) os valores
-        char *ponteiro = linha;
-        //importante limpar as variáveis temporárias com ="" para não bugar com lixo
-        char noc_temp[10] = "";
-        char regiao_temp[50] = "";
-        char notes_temp[50] = "";
-        int tamanho_coluna; //ajuda o parser aramzenando os passos em cada coluna
-
-        //primeiro pegar o código NOC para converter o nome do pass em um código
-        //o strcspn conta quantos caracteres tem até chegar na próxima vírgula
-        //calcula o tamanho da coluna  
-        tamanho_coluna = strcspn(ponteiro, ","); 
-        
-        //como o NOC vem antes do pais do csv, então caso ele exista é armazenado numa variável
-        //temporaria para ser reaproveitado caso seja do pais alvo
-        if (tamanho_coluna > 0) {
-            strncpy(noc_temp, ponteiro, tamanho_coluna);
-            noc_temp[tamanho_coluna] = '\0'; //fecha string
-        }
-        ponteiro += tamanho_coluna + 1; //avança proxima coluna, 1 passo apos a virgula 
-
-        //procura virgula ou quebra de linha para separar, contando o numero de passos
-        //\r deve ser considerado por ser usado no windows
-        //define o tamanho da coluna
-        tamanho_coluna = strcspn(ponteiro, ",\n\r");
-        
-        if (tamanho_coluna > 0) {
-            strncpy(regiao_temp, ponteiro, tamanho_coluna);
-            regiao_temp[tamanho_coluna] = '\0';
-        }
-        
-        ponteiro += tamanho_coluna + 1;
-        //avança a coluna de novo, como essa é a última coluna então a separação não
-        //é mais por vírgula e passa a ser por enter, considerar \n e \r para windows tambem
-        tamanho_coluna = strcspn(ponteiro, "\n\r"); 
-        if (tamanho_coluna > 0) {
-            strncpy(notes_temp, ponteiro, tamanho_coluna);
-            notes_temp[tamanho_coluna] = '\0';
-        }
-
-        //importante que o usuario digite corretamente para funcionar
-        //se o nome encontrado no csv for o desejado então a conversão foi definida
-        if (strcmp(regiao_temp, nome_pais) == 0 || strcmp(notes_temp, nome_pais) == 0) {
-            strcpy(codigo_encontrado, noc_temp);
-            break; //se acahr nçao precisa repetir o loop
-        }
-    }
-
-    fclose(f);
-  
-    return codigo_encontrado;
+    
+    return 0;
 }
 
 
