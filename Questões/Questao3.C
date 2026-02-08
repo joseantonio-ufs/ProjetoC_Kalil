@@ -12,14 +12,15 @@ int ano;
 char esporte[100];
 char atletaNome[150];
 int atletaId;
+int idade; /// add campo idade  // NOVO: campo necessário após cruzamento com bios
 } Atleta;
-// struct para armazenar apenas os campos relevantes do atleta no arquivo results.csv
+// struct principal para armazenar dados do atleta já filtrados por edição
 
 typedef struct {
 int ano;
 int atletaId;
 } biosAtleta;
-// struct auxiliar para armazenar dados biográficos (ano de nascimento e id do atleta)
+// struct auxiliar para armazenar ano de nascimento e id do atleta (arquivo bios)
 
 Atleta Parser(char str[]){
     //1912 Summer Olympics,"Singles, Men (Olympic)",,=17,,Jean-François Blanchy,1,FRA,Tennis,,
@@ -28,7 +29,7 @@ Atleta Parser(char str[]){
     int posVirgulas[10];
     int camposLidos = 0;
     int aspas = 0;
-    // controle das aspas para ignorar vírgulas que fazem parte do campo textual
+    // controle de aspas para não contar vírgulas internas aos campos
 
     for(int i = 0; i < strlen(str); i++){
         if (str[i] == '"')
@@ -37,13 +38,13 @@ Atleta Parser(char str[]){
             if(aspas){}
             else{
             posVirgulas[camposLidos++] = i;
-            // salva a posição das vírgulas válidas para separar os campos do CSV
+            // guarda a posição das vírgulas válidas para separação dos campos
             }
         }
     }
  
     Atleta comp;
-    // estrutura que irá receber os dados extraídos da linha
+    // atleta que será preenchido a partir da linha do CSV
 
     char ano[5];
     for (int i = 0, z = 0; i < 4; i++, z++){
@@ -55,20 +56,20 @@ Atleta Parser(char str[]){
     
     if(posVirgulas[4] + 1 == posVirgulas[5]){
         strcpy(comp.atletaNome, "Vazio");
-        // tratamento para campo de nome vazio
+        // tratamento para nome ausente
     }
     else{
         for (int i = posVirgulas[4] + 1, z = 0; i < posVirgulas[5]; i++, z++){
             comp.atletaNome[z] = str[i];
             comp.atletaNome[z+1] = '\0';
         }
-        // copia o nome do atleta entre as posições das vírgulas
+        // cópia do nome do atleta
     }
 
     char Id[10];
     if(posVirgulas[5] + 1 == posVirgulas[6]){
         comp.atletaId = -1;
-        // id inválido ou ausente
+        // id inválido ou inexistente
     }
     else{
         for (int i = posVirgulas[5] + 1, z = 0; i < posVirgulas[6]; i++, z++){
@@ -81,7 +82,7 @@ Atleta Parser(char str[]){
 
     if(posVirgulas[8] - posVirgulas[7] <= 1){
         strcpy(comp.esporte, "Vazio");
-        // tratamento para esporte não informado
+        // esporte não informado
     }
     else{
         for (int i = posVirgulas[7] + 1, z = 0; i < posVirgulas[8]; i++, z++){
@@ -94,15 +95,16 @@ Atleta Parser(char str[]){
     return comp;
 }
 
-// Roles,Sex,Full name,Used name,Born,Died,NOC,athlete_id,Measurements,Affiliations,Nick/petnames,Title(s),Other names,Nationality,Original name,Name order
-// arquivo bios.csv possui mais campos e estrutura diferente do results.csv
+
+//Roles,Sex,Full name,Used name,Born,Died,NOC,athlete_id,...
+// arquivo bios.csv possui estrutura diferente e mais campos
 
 biosAtleta ParserBios(char str[]){
 
     int posVirgulas[15];
     int camposLidos = 0;
     int aspas = 0;
-    // mesmo esquema de separação por vírgulas, agora considerando mais campos
+    // mesmo esquema de separação por vírgulas, agora para o arquivo bios
 
     for(int i = 0; i < strlen(str); i++){
         if (str[i] == '"')
@@ -116,12 +118,12 @@ biosAtleta ParserBios(char str[]){
     }
  
     biosAtleta comp;
-    // struct que irá armazenar o id e o ano de nascimento
+    // struct que armazenará id e ano de nascimento
 
     char Id[10];
     if(posVirgulas[6] + 1 == posVirgulas[7]){
         comp.atletaId = -1;
-        // id ausente no arquivo bios
+        // id ausente
     }
     else{
         for (int i = posVirgulas[6] + 1, z = 0; i < posVirgulas[7]; i++, z++){
@@ -129,14 +131,14 @@ biosAtleta ParserBios(char str[]){
             Id[z+1] = '\0';
         }
         comp.atletaId = atoi(Id);
-        // conversão do id do atleta
+        // leitura do id do atleta
     }
 
     //"1 April 1969 in Meulan, Yvelines (FRA)"
     char nascimento[150];
     if(posVirgulas[3] + 1 == posVirgulas[4]){
         comp.ano = 3000;
-        // valor alto usado como fallback quando não há data
+        // fallback para data inexistente
     }
     else{
         for (int i = posVirgulas[3] + 1, z = 0; i < posVirgulas[4]; i++, z++){
@@ -145,23 +147,18 @@ biosAtleta ParserBios(char str[]){
         }
 
         comp.ano = 3000;
-        // valor padrão antes da tentativa de extração real
+        // valor padrão antes da extração real
 
         for(int s = 0; s < strlen(nascimento) - 3; s++){
-            if(isdigit(nascimento[s])){
-                if(isdigit(nascimento[s+1])){
-                    if(isdigit(nascimento[s+2])){
-                        if(isdigit(nascimento[s+3])){
-                            char anoReal[5];
-                            anoReal[0] = nascimento[s];
-                            anoReal[1] = nascimento[s+1];
-                            anoReal[2] = nascimento[s+2];
-                            anoReal[3] = nascimento[s+3];
-                            anoReal[4] = '\0';
-                            comp.ano = atoi(anoReal);
-                        }
-                    }
-                }
+            if(isdigit(nascimento[s]) && isdigit(nascimento[s+1]) &&
+               isdigit(nascimento[s+2]) && isdigit(nascimento[s+3])){
+                char anoReal[5];
+                anoReal[0] = nascimento[s];
+                anoReal[1] = nascimento[s+1];
+                anoReal[2] = nascimento[s+2];
+                anoReal[3] = nascimento[s+3];
+                anoReal[4] = '\0';
+                comp.ano = atoi(anoReal);
             }
         }
         // NOVO: extração manual do ano de nascimento percorrendo a string
@@ -170,49 +167,55 @@ biosAtleta ParserBios(char str[]){
     return comp;
 }
 
+
+
+int compara(const void* a, const void* b){
+    const Atleta* ia = (Atleta*) a;
+    const Atleta* ib = (Atleta*) b;
+    return strcmp(ia->atletaNome, ib->atletaNome);
+}
+// NOVO: função de comparação usada no qsort para ordenação por nome
+
+
+
 int main(){
 
     // processo básico de abertura de arquivo criando um ponteiro do tipo FILE e passando como argumento o diretório do csv e ao lado o modo de uso
     // r - read a - escreve (final) w - sobrescreve ------ r+ w+ a+ escrever e lem ao mesmo tempo
-    //(cuidado com as barras invertidas)
-    // devem ser duplas para não ver como caractere de escape
 
         FILE *arq = fopen("results.csv", "r");
         FILE *bios = fopen("bios.csv", "r");
-        // ponteiros para os dois arquivos utilizados no programa
+        // ponteiros para os dois arquivos utilizados
 
         if (arq == NULL || bios == NULL) {
-            puts("Error opening file");
-            // verificação básica de erro na abertura dos arquivos
+            puts("Error opening file"); 
             return 1;
         }
-        
+
         int AnoEscolha = 2022;
-        // ano da edição escolhida para filtragem dos atletas  // NOVO
+        // edição escolhida para filtragem dos atletas
 
         int* cont = malloc(sizeof(int));
         *cont = 0;
-        // contador dinâmico de atletas encontrados
+        // contador dinâmico de atletas da edição escolhida
 
         int capacidade2 = 5;
         biosAtleta* lista = malloc(sizeof(biosAtleta)*capacidade2);
-        // vetor dinâmico para armazenar dados biográficos
+        // vetor dinâmico para dados biográficos
 
         int capacidade = 5;
         Atleta* competidores =  malloc(sizeof(Atleta)*capacidade);
-        // vetor dinâmico para armazenar atletas da edição escolhida
+        // vetor dinâmico para atletas da edição
         
         char ch[3000];
         fgets(ch, sizeof(ch), arq);
-        // descarte do cabeçalho do arquivo results.csv
+        // descarte do cabeçalho do results.csv
 
         while (fgets(ch, sizeof(ch), arq) != NULL){
-            // leitura linha a linha do arquivo results.csv
 
             if ((*cont + 1) == capacidade){
                 capacidade *= capacidade;
-                Atleta* temp = realloc(competidores, sizeof(Atleta) * capacidade);
-                // realocação dinâmica conforme crescimento do vetor  // NOVO
+                Atleta* temp = realloc(competidores, sizeof(Atleta) * capacidade);///////////////////////// LENTO AINDA
                 competidores = temp;
             }
 
@@ -222,40 +225,28 @@ int main(){
 
             if(anoObservado == AnoEscolha){
                 competidores[(*cont)++] = Parser(ch);
-                // apenas atletas da edição escolhida são armazenados
+                // guarda apenas atletas da edição escolhida
             }
         }
 
         if (*cont == 0){
             printf("\n\nNenhum dado encontrado desta edição -> %d\n\n\n", AnoEscolha);
             return 1;
-            // tratamento para edição sem atletas encontrados
-        }
-
-        for (int i = 0; i < *cont; i++){
-            printf("Id: %d | Nome: %s | Ano: %d | Esporte: %s\n",
-                   competidores[i].atletaId,
-                   competidores[i].atletaNome,
-                   competidores[i].ano,
-                   competidores[i].esporte);
-            // impressão dos atletas filtrados
         }
 
         int* num = malloc(sizeof(int));
         *num = 0;
-        // contador dinâmico para o arquivo bios.csv
+        // contador para o arquivo bios
         
         char newPala[3000];
         fgets(newPala, sizeof(newPala), bios);
-        // descarte do cabeçalho do arquivo bios.csv
+        // descarte do cabeçalho do bios.csv
 
         while (fgets(newPala, sizeof(newPala), bios) != NULL){
-            // leitura linha a linha do arquivo bios.csv
 
             if ((*num + 1) == capacidade2){
                 capacidade2 *= capacidade2;
-                biosAtleta* temp = realloc(lista, sizeof(biosAtleta) * capacidade2);
-                // realocação dinâmica da lista de bios  // NOVO
+                biosAtleta* temp = realloc(lista, sizeof(biosAtleta) * capacidade2);///////////////////////// LENTO AINDA
                 lista = temp;
             }
 
@@ -263,8 +254,48 @@ int main(){
             // armazenamento dos dados biográficos
         }
 
-        for (int i = 0; i < *num; i++) {
-            printf("Id: %d | Ano: %d \n", lista[i].atletaId, lista[i].ano);
-            // impressão dos dados processados
+        qsort(competidores, *cont, sizeof(Atleta), compara); 
+        // NOVO: ordenação para facilitar remoção de duplicados
+
+        /// UNICIDADE
+        int zonaSeg = 1;
+        for(int k = 1; k < *cont; k++){
+            if (strcmp(competidores[k].esporte, competidores[k-1].esporte) == 0 &&
+                competidores[k].atletaId - competidores[k-1].atletaId == 0){}
+            else{
+                competidores[zonaSeg] = competidores[k];
+                zonaSeg++;//// retira atletas de mesmo id e mesmo esporte
+            }
+        }
+
+        Atleta* temp = realloc(competidores, sizeof(Atleta) * zonaSeg);
+        competidores = temp;
+        // NOVO: compactação do vetor após remoção de duplicados
+
+        for(int k = 0; k < *num; k++){
+            int quebraloop = 1;
+            int itera = zonaSeg - 1;
+            // varredura reversa para cruzamento entre competidores e bios
+
+            while(quebraloop){
+                if(lista[k].atletaId == competidores[itera].atletaId)
+                competidores[itera].idade = AnoEscolha - lista[k].ano;
+                // NOVO: cálculo da idade a partir do ano de nascimento
+
+                itera--;
+
+                if (itera == -1)
+                quebraloop = 0;
+            }
+        }
+
+        for (int i = 0; i < zonaSeg; i++){
+            printf("Id: %d | Nome: %s | Ano: %d | Esporte: %s  Idade: %d\n",
+                   competidores[i].atletaId,
+                   competidores[i].atletaNome,
+                   competidores[i].ano,
+                   competidores[i].esporte,
+                   competidores[i].idade);
+            // impressão final dos atletas com idade calculada
         }
 }
