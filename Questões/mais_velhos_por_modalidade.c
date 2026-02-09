@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+#include "arquivo.h" //conectando ao .h
 
 // Criação de uma struct Atleta com campos referentes a uma determinada edição olímpica
 typedef struct {
@@ -44,6 +45,7 @@ Atleta Parser(char str[]){
 
      // Vetor para armazenar as posições das vírgulas relevantes, mapeamos para saber onde começa e onde termina um campo
     int posVirgulas[10];
+    int num_Virgulas_lidas = 0;
     int camposLidos = 0; // itera a posição das vírgulas
     int aspas = 0; // espécie de interruptor que impede salvar posição de vírgulas dentro de campos. por exemplo 
 
@@ -55,6 +57,7 @@ Atleta Parser(char str[]){
             if(aspas){}
             else{
             posVirgulas[camposLidos++] = i;
+            num_Virgulas_lidas++;
             }
         }
     }
@@ -71,11 +74,14 @@ Atleta Parser(char str[]){
     
    
    //Extrai o nome do atleta, que esta localizado entre as vírgulas 4 e 5 da linha. Caso o campo esteja vazio, ele é marcado como "Vazio"
-    if(posVirgulas[4] + 1 == posVirgulas[5]){strcpy(comp.atletaNome, "Vazio");}
+   if (num_Virgulas_lidas < 10){strcpy(comp.atletaNome, "NoN");}
     else{
-        for (int i = posVirgulas[4] + 1, z = 0; i < posVirgulas[5]; i++, z++){
-            comp.atletaNome[z] = str[i];
-            comp.atletaNome[z+1] = '\0';  // após ler a string nome, salvamos na própria struct
+        if(posVirgulas[4] + 1 == posVirgulas[5]){strcpy(comp.atletaNome, "Vazio");}
+        else{
+            for (int i = posVirgulas[4] + 1, z = 0; i < posVirgulas[5]; i++, z++){
+                comp.atletaNome[z] = str[i];
+                comp.atletaNome[z+1] = '\0';
+            }
         }
     }
 
@@ -242,7 +248,7 @@ void maisVelhos(Atleta array[], int zonaSeg, FILE* arq){// função que recebe o
 
             // retira o ID e compara, caso seja igual ao do atleta da iteração então salva na lista de anos
             char Id[10];
-            if(posVirgulas[5] + 1 == posVirgulas[6]){strcpy(Id, "0");}
+            if(posVirgulas[5] + 1 == posVirgulas[6]){strcpy(Id, "0");} 
             else{
                 for (int i = posVirgulas[5] + 1, z = 0; i < posVirgulas[6]; i++, z++){
                     Id[z] = str[i];
@@ -299,7 +305,8 @@ GuardaListaAtleta CriarSelecao(int anoBusca, FILE* arq){// função do tipo do s
             if(anoObservado == anoBusca){// aqui observamos se o ano da linha correspondete bate com o ano escolhido pelo usuário (observado), caso bat, então adicionamos a lista
 
                 Atleta temp = Parser(ch); // cria um objeto atleta e salva nele o competidor "comp" criado e retornado pelo parser
-                if(strcmp(temp.esporte, "Vazio") == 0){} 
+                if(strcmp(temp.atletaNome, "NoN") == 0){}// tratamento para linhas incompletas
+                else if(strcmp(temp.esporte, "Vazio") == 0){} 
                 else{
                 competidores[(cont)++] = temp; // aqui salvamos esse objeto temp (temporário) no array caso ele possua o campo esporte
                 }
@@ -310,6 +317,7 @@ GuardaListaAtleta CriarSelecao(int anoBusca, FILE* arq){// função do tipo do s
         
     return lista; // retornamos o struct
 }
+
 
 GuardaListaBios informacoesAtletas(FILE* bios){// função do tipo do struct que salva o array de biosAtletas e o contador do número de elementos dele
     GuardaListaBios listagem; // objeto da struct que guardará a lista e o contador
@@ -326,18 +334,25 @@ GuardaListaBios informacoesAtletas(FILE* bios){// função do tipo do struct que
         
 
         if ((num + 1) == capacidade2){
-            capacidade2 *= capacidade2;
-            biosAtleta* temp = realloc(lista, sizeof(biosAtleta) * capacidade2);//realoca array criado para caso atinja o tamanho máximo, copiando o conteúdo do anterior e aumentando o tamanho
-            lista = temp;// passando a referencia
+            capacidade2 += capacidade2;
+            biosAtleta* temp = realloc(lista, sizeof(biosAtleta) * capacidade2);
+            lista = temp;
         }
 
-        lista[(num)++] = ParserBios(newPala); // aqui adicionamos todo e qualquer bios, já que bios não possui o campo ano e precisamos cruzar dados com  Atletas usando i ID
-
+    
+        biosAtleta temp = ParserBios(newPala);
+        while(temp.atletaId > capacidade2 - 1){
+            capacidade2 *= capacidade2;
+            biosAtleta* temp = realloc(lista, sizeof(biosAtleta) * capacidade2);
+            lista = temp;
+        }
+        lista[temp.atletaId] = temp;
     }
     listagem.array = lista;
     listagem.contador = num; // passagem de valor do contador e retorno do struct que guarda o mapeamento do bios
     return listagem;
 }
+
 
 void exibir(GuardaListaAtleta lista, FILE* arq){/// Função que exibe os dados processado e guardados nos arrays
     for (int i = 0; i < lista.contador; i++) {
@@ -350,6 +365,7 @@ void exibir(GuardaListaAtleta lista, FILE* arq){/// Função que exibe os dados 
 
         maisVelhos(lista.array, lista.contador, arq); // exibe os mais velhos da ediçaõ e diz quanstas participaram
 }
+
 
 void peneira(GuardaListaAtleta* lista, GuardaListaBios* lista2, int AnoEscolha){ // Funcão primncipal de processamento de dados
 
@@ -366,27 +382,15 @@ void peneira(GuardaListaAtleta* lista, GuardaListaBios* lista2, int AnoEscolha){
         }// aqui retiramos apenas duplicatas de mesmo id e esporte. note que assim evitamos casos de atletas que participaram de dois esportes distintos em um mesmo ano
     }
 
-    Atleta* temp = realloc(lista->array, sizeof(Atleta) * zonaSeg); // apos retirar as duplicatas realocamos o array para ter o tamanho exato de at6letas válidos
+    Atleta* temp = realloc(lista->array, sizeof(Atleta) * zonaSeg); // apos retirar as duplicatas realocamos o array para ter o tamanho exato de atletas válidos
     lista->array = temp;
     
 
-    for(int k = 0; k < lista2->contador; k++){
-        int quebraloop = 1;
-        int itera = zonaSeg - 1;
-        while(quebraloop){
-            if(lista2->array[k].atletaId == lista->array[itera].atletaId)
-            lista->array[itera].idade = AnoEscolha - lista2->array[k].ano;// cruzamos dados com o array de csv para assim associar a cada id o ano de nascimento, e, consequentemente
-          // gavar no campo idade a idade do atleta
-            itera--;
-          // for com while. perocrresse bios uma vez e tenta achar o atleta no array de atletas válidos
-            if (itera == -1)
-            quebraloop = 0;
-        }
+    for(int k = 0, y = 0; k < zonaSeg; k++, y++){
+            lista->array[k].idade = lista->array[k].ano - lista2->array[lista->array[k].atletaId].ano; // cruza dados em hashtable
     }
 
-
     qsort(lista->array, zonaSeg, sizeof(Atleta), compara2); // ordena pela idade e esporte, assim organizando o array em blocos de atletas do mesmo esporte, do mais velho para o mais novo
-
 
     int segundaZonaSeg = 1;
     for(int k = 1; k < zonaSeg; k++){
@@ -404,7 +408,7 @@ void peneira(GuardaListaAtleta* lista, GuardaListaBios* lista2, int AnoEscolha){
 }
 
 
-void gestao(FILE* arq, FILE* bios){ // função de getsão princiapal. comom o código foi quebrado em blocos de funções, essa aqui organiza tudo e chama
+void gestao_q2(FILE* arq, FILE* bios){ // função de getsão princiapal. comom o código foi quebrado em blocos de funções, essa aqui organiza tudo e chama
 
     int AnoEscolha;
     printf("Escolha o ano para busca: ");// deixamos o usuário escolher o ano
@@ -420,19 +424,4 @@ void gestao(FILE* arq, FILE* bios){ // função de getsão princiapal. comom o c
     peneira(&lista, &listagem, AnoEscolha); // passamos tudo para peneira e processamos os dados
 
     exibir(lista, arq); // por fim exibimos o que foi encontrado
-    
-    fclose(arq); // fecha os arquivos 
-    fclose(bios);
-}
-
-
-int main(){
-    FILE *arq = fopen("results.csv", "r");// abre os arquivos
-    FILE *bios = fopen("bios.csv", "r");
-    if (arq == NULL || bios == NULL) {
-            puts("Error ao abrir arquivos"); // retorna um erro caso o ponteiro que receberia o arquivo seja NULL
-            return 1;
-    }
-    gestao(arq, bios); // chama a função de gestão passando os ponteiros
-    return 0;
 }
