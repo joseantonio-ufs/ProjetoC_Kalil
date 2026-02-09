@@ -414,11 +414,11 @@ void gestao_q2(FILE* arq, FILE* bios){ // função de getsão princiapal. comom 
     printf("Escolha o ano para busca: ");// deixamos o usuário escolher o ano
     scanf("%d", &AnoEscolha);
     
-    GuardaListaAtleta lista = CriarSelecao(AnoEscolha, arq); // ciramos a truct que guarda o ponteiro do array e guardamos tudo dentro dela
+    GuardaListaAtleta lista = CriarSelecao(AnoEscolha, arq); // criamos a struct que guarda o ponteiro do array e guardamos tudo dentro dela
     if (lista.contador == 0){
         printf("\n\nNenhum dado encontrado desta edição -> %d\n\n\n", AnoEscolha);
         return;
-    }// se o contado retornar 0 quer dizer que nenhum jiogado foi encontrado no ano, logo o ano não é olímpico
+    }// se o contado retornar 0, quer dizer que nenhum jogado foi encontrado no ano, logo o ano não é olímpico
 
     GuardaListaBios listagem = informacoesAtletas(bios); // guardamos a lista bios
     peneira(&lista, &listagem, AnoEscolha); // passamos tudo para peneira e processamos os dados
