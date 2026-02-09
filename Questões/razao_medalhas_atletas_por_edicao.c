@@ -1,9 +1,11 @@
+//🥈 Considere 10 países a sua escolha. Para cada país, calcule a razão entre o número total de medalhas e o número total de atletas que representaram esse país em uma determinada olimpíada, identificando os países mais eficientes.
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include "arquivo.h"   // ligando ao .h
 
-//Aqui, definimos a struc de Atleta, que contem campos específicos os quais serão usados posteriormente na implementação da lógica do código
+//Aqui, definimos a struct de Atleta, que contem campos específicos os quais serão usados posteriormente na implementação da lógica do código
 typedef struct{
   int ano;
   char medalha[10];
@@ -20,14 +22,15 @@ typedef struct{
     char NOC[30];
 } Pais;
 
-Atleta Parser(char str[]){
-//1912 Summer Olympics,"Singles, Men (Olympic)",,=17,,Jean-François Blanchy,1,FRA,Tennis,,
-//1912 Summer Olympics,"Doubles, Men (Olympic)",Jean Montariol,DNS,,Jean-François Blanchy,1,FRA,Tennis,,
+static Atleta Parser(char str[]){
 
+
+    //Aqui, definimos variáveis que serão utilizadas para a lógica de separação dos campos que serão utilizados
     int posVirgulas[10];
     int camposLidos = 0;
     int aspas = 0;
 
+    //Verificação para saber se a vígula esta localizada em um campo delimitado por aspas, e se não estiver, incrementar posVirgulas[camposLidos++]  
     for(int i = 0; i < strlen(str); i++){
         if (str[i] == '"')
         aspas = !aspas;
@@ -38,9 +41,11 @@ Atleta Parser(char str[]){
             }
         }
     }
- 
+  
+    //Criação de uma variável do tipo atleta para a atribuição dos campos;
     Atleta comp;
 
+    //Capturando o campo "ano", que esta localizado sempre na primeira parte das linhas do results.csv, por meio da copia dessa string para o campo "ano", e depois realizando a conversão de string para int
     char ano[5];
     for (int i = 0, z = 0; i < 4; i++, z++){
             ano[z] = str[i];
@@ -49,7 +54,7 @@ Atleta Parser(char str[]){
     comp.ano = atoi(ano);
     
    
-
+   //Capturando o campo "medalha", que esta localizado entre as vírgulas 3 e 4 do results.csv, por meio da copia dessa string para o campo "medalha"
     if(posVirgulas[3] + 1 == posVirgulas[4]){strcpy(comp.medalha, "Vazio");}
     else{
         for (int i = posVirgulas[3] + 1, z = 0; i < posVirgulas[4]; i++, z++){
@@ -58,6 +63,7 @@ Atleta Parser(char str[]){
         }
     }
 
+    //Capturando o campo "Id", que esta localizado entre as vírgulas 5 e 6 do results.csv, por meio da copia dessa string para o campo "Id", e depois convertendo esse campo para um inteiro
     char Id[10];
     if(posVirgulas[5] + 1 == posVirgulas[6]){comp.atleta_id = -1;}
     else{
@@ -68,6 +74,7 @@ Atleta Parser(char str[]){
         comp.atleta_id = atoi(Id);
     }
 
+    //Capturando o campo "NOC", que esta localizado entre as vírgulas 6 e 7 do results.csv, por meio da copia dessa string para o campo "pais"
     if(posVirgulas[6] + 1 == posVirgulas[7]){strcpy(comp.pais, "Vazio");}
     else{
         for (int i = posVirgulas[6] + 1, z = 0; i < posVirgulas[7]; i++, z++){
@@ -76,17 +83,19 @@ Atleta Parser(char str[]){
         }
     }
     
-    //printf("Posição de eficiência do pais %s: %d. Valor da razão entre medalhas e atletas: %d  %s\n", comp.medalha, comp.atleta_id, comp.ano, comp.pais);
+    
     return comp;
 }
 
   //Criação de um array de structs do tipo Pais
   Pais  listaDePaises[10];
+
+  //Criando uma variável que será utilizada posteriormente para implementar a lógica de: Verificar se o ano escolhido foi um ano Olímpico
   int anoEncontrado = 0;
   
 
 
-//implementação da função de comparação baseada no cálculo da razão, para ordenação dos países 
+//implementação das funções de comparação baseadas no cálculo da razão, para ordenação dos países 
 int comparaPaises(const void* a, const void* b){
   const Pais* p1 = (Pais*) a;
   const Pais* p2 = (Pais*) b;
@@ -116,7 +125,7 @@ int comparaPaises(const void* a, const void* b){
       }
 }
 
-
+//Criando a função que será utilizada para o usuário poder dizer quais países ele quer obter informações acerca da razão entre o número de medalhas e o de atletas
 void entradaDosPaises(Pais arrayPais[]){
     //Entrada de dados dos países escolhidos e inicialização dos campos da struct
   printf("Escolha o 10 paises que voce almeija obter a razao: ");
@@ -127,9 +136,9 @@ void entradaDosPaises(Pais arrayPais[]){
   }
 }
 
+//Criando a função que contem o lógica principal do programa, que irá servir para incrementar o contador de medalhas e de atletas para cada item da lista de Paises
 void incrementadorMedalhasEAtletas(FILE *arquivo){
   //Criando variáveis que serão utilizadas futuramente na lógica do código
- 
   int anoEscolhido;
   int analisandoAno;
   //Essa parte irá servir para garantir que não hajam atletas repetidos para um mesmo país 
@@ -145,18 +154,19 @@ void incrementadorMedalhasEAtletas(FILE *arquivo){
     //Pega o primeiro campo do arquivo, no caso, o ano
     sscanf(linha, "%d", &analisandoAno);
     
-
-    Atleta AtletaGeral = Parser(linha);
+    //Criando um atleta geral, que servirá implementar a lógica do Parser, usado para ler cada linha do arquivo de maneira eficiente, capturando apenas os campos necessários
+     Atleta AtletaGeral = Parser(linha);
     if(analisandoAno==anoEscolhido){
+      //Ele muda o valor de anoEncontrado para um, que será utilizado em uma condicional mais para frente do código para que ele possa imprimir todas as informações referentes às razões, visto que se tivesse continuado zero, o ano seria tido como um em que não houve Olimpiada
       anoEncontrado = 1;
       for(int i = 0; i<10; i++){
           if(strcmp(listaDePaises[i].NOC, AtletaGeral.pais) == 0){
-            //Se o nome do país analisado for o mesmo da linha atual, verificar se tem medalha ou não, e se sim, incrementa o número de medalhas
-            if(strcmp(AtletaGeral.medalha, "Vazio") != 0){
+            //Se o nome do país analisado for o mesmo da linha atual, verificar se tem medalha ou não, de acorodo com o nome que aparece la, e se sim, incrementa o número de medalhas
+            if(strcmp(AtletaGeral.medalha, "Bronze") == 0 || strcmp(AtletaGeral.medalha, "Silver") == 0|| strcmp(AtletaGeral.medalha, "Gold") == 0){
               listaDePaises[i].numeroMedalhas++;
             }
            
-            
+            //Aqui ele usa a variável IdAnterior para analisar o Id atual do atleta. Aproveitando do fato, de no results.csv, ele esta agrupado por atletas, então o id se mantem o mesmo até mudar de atleta
             if(AtletaGeral.atleta_id != IdAnterior){
               listaDePaises[i].numeroAtletas++;
               IdAnterior = AtletaGeral.atleta_id;
@@ -167,17 +177,22 @@ void incrementadorMedalhasEAtletas(FILE *arquivo){
   }
 }
 
+//Implementando função que vai chamar as funções "comparaPaises" e "comparaPaises2" para realizar a ordenação da lista de paises com base na razao, e, após isso, vai realizar o exibição dos dados de cada pais escolhido individualmente
 void capturaDeDados(Pais arrayPais[]){
    qsort(arrayPais, 10, sizeof(Pais), comparaPaises);
    qsort(arrayPais,10, sizeof(Pais), comparaPaises2);
-  if(anoEncontrado==1){
-  //Realizando o cálculo da razão, com a lista já ordenada, e pegando os 3 primeiros países, que são os que foram os que obtiveram as maiores razões
+
+//Usando a variável do anoEncontrado como uma condicional, onde, se ela tiver mudado de 0 para 1, isso implica que o ano escolhido é olímpico. Porém, se ela continuou 0, isso implica que o ano não é olímpico, e portanto, ele cai no else
+if(anoEncontrado==1){
+  //Realizando o cálculo da razão, com a lista já ordenada
   for(int i = 0; i< 10; i++){
     float razao = (float)arrayPais[i].numeroMedalhas/(float)arrayPais[i].numeroAtletas;
 
+    //Verificando se o número de atletas do país analisado é 0, pois, se for, isso implica que o país não participou daquela edição das Olimpiadas, l
     if(arrayPais[i].numeroAtletas == 0){
       printf("O pais %s nao participou dessa edicao dos jogos olimpicos\n", arrayPais[i].NOC);
   }else{
+    //Implementação dessa condicional só para formatar o zero e deixar o código visualmente mais agradável e compreensivo
     if(razao!=0){
      printf("Posicao do pais %s em relacao a eficiencia : %d°. Numero de atletas: %d. Numero de medalhas: %d. Razao: %.3lf\n",arrayPais[i].NOC,i+1,arrayPais[i].numeroAtletas,arrayPais[i].numeroMedalhas,razao);
    }else{
@@ -191,13 +206,8 @@ void capturaDeDados(Pais arrayPais[]){
   }
  
 
-void gestao_q2(){
+void gestao_q2(FILE *results){
       //Aqui ocorre a abertura do arquivo results.csv e o teste para confirmar que o arquivo abriu mesmo 
-  FILE *results = fopen("C:/Users/phall/Desktop/Projeto/results.csv","r");
-
-  if(results == NULL){
-    puts("Error opening file");
-  }
 
   //Chamando a função responsável do permitir a leitura dos países e atribuí-los aos campos da listaDePaises
   entradaDosPaises(listaDePaises);
@@ -208,8 +218,5 @@ void gestao_q2(){
   
   //Chamando a função responsável por capturar os dados e exibí-los no terminal
   capturaDeDados(listaDePaises);
-
-//Sessão para encerramento do arquivo
-fclose(results);
   
 }
