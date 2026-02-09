@@ -339,7 +339,7 @@ void gestao_q4(FILE *arquivo_resultados, FILE *arquivo_bios) {
     
     int acumuladora = 0; //acumuladora que controla o loop
 
-    printf("Insira o nome de 4 países e veja a comparação de medalhas totais por genero\n");
+    printf("Insira o nome de 4 paises e veja a comparacao de medalhas totais por genero\n");
 
     //no loop a comparação será feita entre os 4 países, repetindo o processo
     while (acumuladora < 4) {
@@ -347,8 +347,8 @@ void gestao_q4(FILE *arquivo_resultados, FILE *arquivo_bios) {
         char NOC[5];
         char pais[50];
 
-        printf("Insira o nome em inglês do pais desejado, com escrita compativel ao nome do time do pais nas olimpiadas ex: France \n");
-        fgets(pais, 50, stdin);
+        printf("Insira o nome em ingles do pais desejado, com escrita compativel ao nome do time do pais nas olimpiadas ex: France \n");
+        scanf(" %s", pais);
         //o fgets pega o \n, isso atrapalharia a comparação, então é preciso remover o \n
         //para isos usar o strcspn que percorre a string até achar o \n e transforma em \0
         pais[strcspn(pais, "\n")] = 0;
@@ -358,7 +358,7 @@ void gestao_q4(FILE *arquivo_resultados, FILE *arquivo_bios) {
         //se o país for inválido, o NOC será "NADA", então nem chama a função
         if (strcmp(NOC, "NADA")) { //se for invalido retorna 0 e não cai na condição
             contar_medalhistas(NOC, placar, arquivoResultados); //usa o código NOC para identificar as medalhas
-            printf("%s:\n %d medalhas para Homens, %d para mulheres \n", pais, placar[0], placar[1]);
+            printf("%s:\n %d medalhas para Homens, %d para Mulheres \n", pais, placar[0], placar[1]);
         } else {
             //se retornar 0, o NOC é igual a "NADA", então sai do if e cai no else
             printf("Pais invalido\n");
