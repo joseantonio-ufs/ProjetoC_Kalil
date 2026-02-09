@@ -4,96 +4,116 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+#include "arquivo.h"   // header com protótipos e possíveis definições externas
 
 // itero results e pego todos os atletas (mesmo repetidos), pego seu id, ano, nome e esporte. mapeio o bios por hashkey, associo ao indice e puxo a 
 // data de nascimento.  atribuo a idade ao atleta. meto um qsort e acabou;
 
+// Criação de uma struct Atleta com campos referentes a uma determinada edição olímpica
 typedef struct {
-    char esporte[100];        // esporte da participação
-    char atletaNome[150];     // nome do atleta
-    int Id;                   // id do atleta
-    int anoOlimpiada;         // ano da olimpíada
-    int idade;                // idade calculada
-    char genero[15];          // gênero do atleta (associado via bios)
+    char esporte[100]; // ano da edição olímpica
+    char atletaNome[150];  // nome do atleta
+    int Id; // id único do atleta
+    int anoOlimpiada; // ano da edição olímpica 
+    int idade; // idade calculada posteriormente com o cruzamento com o bios.csv
+    char genero[15]; // genero atribuido, baseado no segundo campo do nbios.csv
 } Atleta;
 
+// Struct do tipo biosAtleta para auxiliar a cruzar dados biográficos do atleta
 typedef struct {
-    char ano[10];             // ano de nascimento
-    int atletaId;             // id do atleta
-    char genero[10];          // gênero vindo do bios.csv
+    char ano[10];  // ano de nascimento
+    int atletaId; // id do atleta
+    char genero[10];// genero que será pasado para o atleta
 } biosAtleta;
 
-Atleta Parser(char str[]){
-    // linhas típicas do results.csv
 
+// parser do results.csv 
+static Atleta Parser(char str[]){ // static para isolar só para essa questão
+    // faz a leitura manual da linha, ignorando vírgulas dentro de aspas
+    // note que se a posição de uma virgula mais 1 for igual a da próxima, então o campo é vazio
+
+    int posVirgulas[10];  // Vetor para armazenar as posições das vírgulas relevantes, mapeamos para saber onde começa e onde termina um campo
     int posVirgulas[10];
-    int camposLidos = 0;
-    int aspas = 0;
+    int num_Virgulas_lidas = 0;   // usado para validar linhas incompletas
+    int camposLidos = 0; // itera a posição das vírgulas
+    int aspas = 0; // espécie de interruptor que impede salvar posição de vírgulas dentro de campos. por exemplo 
 
-    // identifica apenas vírgulas que realmente separam colunas
+    // identifica apenas vírgulas válidas como separador de coluna
     for(int i = 0; i < strlen(str); i++){
-        if (str[i] == '"')
+        if (str[i] == '"') // aqui evita virgulas inválidas
             aspas = !aspas;
 
-        if ((str[i] == ',' && str[i+1] != ' ')){
+        if ((str[i] == ',' && str[i+1] != ' ')){ // salva apenas vírgulas válida
             if(aspas){}
             else{
                 posVirgulas[camposLidos++] = i;
+                num_Virgulas_lidas++;
             }
         }
     }
  
-    Atleta comp;
+    Atleta comp; // cria-se o objeto atleta, com todas as informações necessárias, que será retornado pela função
 
-    // extrai o ano da olimpíada (sempre no início da linha)
+
+    // lê o ano da olimpíada no início da string
     sscanf(str,"%d",&comp.anoOlimpiada);
-    
-    // extrai o nome do atleta
-    if(posVirgulas[4] + 1 == posVirgulas[5]){
-        strcpy(comp.atletaNome, "Vazio");
+
+    // valida se a linha tem colunas suficientes
+    if (num_Virgulas_lidas < 10){
+        strcpy(comp.atletaNome, "NoN"); // marca linha inválida
     }
     else{
-        for (int i = posVirgulas[4] + 1, z = 0; i < posVirgulas[5]; i++, z++){
-            comp.atletaNome[z] = str[i];
-            comp.atletaNome[z+1] = '\0';
+        // extrai nome do atleta
+        if(posVirgulas[4] + 1 == posVirgulas[5]){
+            strcpy(comp.atletaNome, "Vazio");
+        }
+        else{
+            for (int i = posVirgulas[4] + 1, z = 0; i < posVirgulas[5]; i++, z++){
+                comp.atletaNome[z] = str[i];
+                comp.atletaNome[z+1] = '\0'; // salva nome válido
+            }
         }
     }
 
     // extrai o id do atleta
     char Id[10];
     if(posVirgulas[5] + 1 == posVirgulas[6]){
-        comp.Id = -1;
+        comp.Id = -1; // caso não exista é atribuido um id negativo
     }
     else{
         for (int i = posVirgulas[5] + 1, z = 0; i < posVirgulas[6]; i++, z++){
             Id[z] = str[i];
-            Id[z+1] = '\0';
+            Id[z+1] = '\0'; // salva o id em uma várialvel
         }
-        comp.Id = atoi(Id);
+        comp.Id = atoi(Id); // converte id e salva nos campos
     }
 
-    // extrai o esporte da participação
+    // extrai o esporte
     if(posVirgulas[7] + 1 == posVirgulas[8]){
         strcpy(comp.esporte, "Vazio");
     }
     else{
         for (int i = posVirgulas[7] + 1, z = 0; i < posVirgulas[8]; i++, z++){
             comp.esporte[z] = str[i];
-            comp.esporte[z+1] = '\0';
+            comp.esporte[z+1] = '\0'; // salva o esporte no campo da struct
         }
     }
 
-    // retorna a participação já parseada
-    return comp;
+    return comp; // retorna o atleca já configurado
 }
 
-biosAtleta ParserBios(char str[]){
 
+//Implementação do Parser responsável pelo arquivo bios.csv
+//Esse Parser é responsável por realizar a leitura separada de dados biográficos de cada atleta
+// a fim de adquirir dados para o cálculo da idade e retirar o gê+nero
+static biosAtleta ParserBios(char str[]){ // static para isolar só para essa questão
+
+     // ideia semelhante do parser Atleta, só aumentamos o array para poder ler até 15 vírgulas
     int posVirgulas[15];
     int camposLidos = 0;
     int aspas = 0;
 
-    // mesma lógica do parser do results
+    // mesma lógica de separação por vírgulas fora de aspas
     for(int i = 0; i < strlen(str); i++){
         if (str[i] == '"')
             aspas = !aspas;
@@ -106,9 +126,9 @@ biosAtleta ParserBios(char str[]){
         }
     }
  
-    biosAtleta comp;
+    biosAtleta comp; // o mapeamento de ID, nascimento e sexo
     
-    // extrai o gênero do atleta
+    // extrai o gênero
     char sexo[15];
     if(posVirgulas[0] + 1 == posVirgulas[1]){
         strcpy(comp.genero, "Assexual");
@@ -118,7 +138,7 @@ biosAtleta ParserBios(char str[]){
             sexo[z] = str[i];
             sexo[z+1] = '\0';
         }
-        strcpy(comp.genero, sexo);
+        strcpy(comp.genero, sexo); // copia o gênero para o campo correto da struct
     }
 
     // extrai o id do atleta
@@ -134,23 +154,25 @@ biosAtleta ParserBios(char str[]){
         comp.atletaId = atoi(Id);
     }
 
-    // campo textual de nascimento
+    // extrai o ano de nascimento a partir do campo textual
     char nascimento[150];
     if(posVirgulas[3] + 1 == posVirgulas[4]){
         strcpy(comp.ano,"Vazio");
     }
     else{
-        // copia o campo inteiro de nascimento
         for (int i = posVirgulas[3] + 1, z = 0; i < posVirgulas[4]; i++, z++){
             nascimento[z] = str[i];
             nascimento[z+1] = '\0';
         }
 
-        // busca manual por um ano (4 dígitos)
+        // busca manual por 4 dígitos consecutivos
         strcpy(comp.ano,"Vazio");
         char anoCopiado[5];
         int TotalIteraçoes = strlen(nascimento);
 
+        // Esse campo realiza uma busca manual pelo ano, buscando as primeiras quatro vezes seguidas que aparecem números
+        //visto que essa é a única parte da linha capaz de representar o ano e que pode aparecer de 4 formar diferentes, incluindo aparecer um texto sem ano nenhum
+        // literalmente sem ano, não é nem vazio, tem alguma coisa que definitivamente não é o ano
         for(int s = 0; s < TotalIteraçoes - 3; s++){
             if(isdigit(nascimento[s]) &&
                isdigit(nascimento[s+1]) &&
@@ -161,113 +183,119 @@ biosAtleta ParserBios(char str[]){
                 anoCopiado[2] = nascimento[s+2];
                 anoCopiado[3] = nascimento[s+3];
                 anoCopiado[4] = '\0';
-                strcpy(comp.ano,anoCopiado);
+                strcpy(comp.ano,anoCopiado); // encontrou 4 digitos seguidos, salva e converte para salvar no campo do struct
                 s = TotalIteraçoes;
             }
         }
     }
-
-    // retorna os dados do bios
-    return comp;
+    return comp;  // retornar o mapa, com id e ano de nascimento
 }
 
-// ordenação por idade (decrescente)
-int compara1(const void* a, const void* b){
-    const Atleta* ia = (Atleta*)a;
-    const Atleta* ib = (Atleta*)b;
-    return ib->idade - ia->idade;
-}
 
-// ordenação por id para agrupar atletas iguais
-int compara2(const void* a, const void* b){
-    const Atleta* ia = (Atleta*)a;
-    const Atleta* ib = (Atleta*)b;
-
-    if(ia->Id - ib->Id == 0){
-        return ib->idade - ia->idade;
-    }
-    return ia->Id - ib->Id;
-}
-
-int main(){
-
-    // abertura dos arquivos csv
-    FILE *arq = fopen("results.csv", "r");
-    FILE *bios = fopen("bios.csv", "r");
-
-    // valida abertura
-    if (arq == NULL || bios == NULL) {
-        puts("Error opening file"); 
-        return 1;
-    }
-    
+// cria dinamicamente a lista de atletas a partir do results.csv
+int gerarLista_Atletas(Atleta** competidores, FILE* arq){
     int cont = 0;
     int capacidade = 5;
 
-    // vetor dinâmico de participações
-    Atleta* competidores =  malloc(sizeof(Atleta)*capacidade);
+    // alocação inicial
+    *competidores = malloc(sizeof(Atleta)*capacidade);
     
     char ch[3000];
     fgets(ch, sizeof(ch), arq); // ignora cabeçalho
 
-    // leitura completa do results.csv
+    // leitura linha a linha
     while (fgets(ch, sizeof(ch), arq) != NULL){
 
-        // realocação dinâmica
+        // expansão dinâmica do vetor, semelhante arraylist
         if ((cont + 1) == capacidade){
             capacidade *= capacidade;
-            Atleta* temp = realloc(competidores, sizeof(Atleta) * capacidade);
-            competidores = temp;
+            Atleta* temp = realloc(*competidores, sizeof(Atleta) * capacidade);
+            *competidores = temp;
         }
 
-        // parse da linha e armazenamento
-        competidores[cont++] = Parser(ch);
+        // filtra linhas inválidas
+        Atleta verificador = Parser(ch);
+        if (strcmp(verificador.atletaNome, "NoN") != 0)
+            (*competidores)[cont++] = Parser(ch);
     }
+    return cont; // retorna o tamanho da lista de atletas
+}
 
+
+// carrega o bios.csv indexando diretamente pelo atletaId (hashtable)
+int dados_Bios(biosAtleta** lista, FILE* bios){
     int capacidade2 = 3;
+    int num = 0;
 
-    // vetor bios indexado por atletaId
-    biosAtleta* lista = malloc(sizeof(biosAtleta)*capacidade2);
+    // alocação inicial
+    *lista = malloc(sizeof(biosAtleta)*capacidade2);
 
     char newPala[3000];
     fgets(newPala, sizeof(newPala), bios); // ignora cabeçalho
 
-    // leitura do bios.csv
-    while(fgets(newPala, sizeof(newPala), bios) != NULL){ 
+    while(fgets(newPala, sizeof(newPala), bios) != NULL){ // lê todo bios
 
-        biosAtleta temp = ParserBios(newPala);
+        biosAtleta temp = ParserBios(newPala); // cria um objeto temporario de bios
 
-        // garante índice direto pelo atletaId
+        // garante índice válido para acesso direto, expandindo array caso não tenha espaço
         while(temp.atletaId > capacidade2 - 1){
             capacidade2 *= capacidade2;
-            biosAtleta* temp2 = realloc(lista, sizeof(biosAtleta) * capacidade2);
-            lista = temp2;
+            biosAtleta* temp2 = realloc(*lista, sizeof(biosAtleta) * capacidade2);
+            *lista = temp2;
         }
 
-        // associação direta id -> bios
-        lista[temp.atletaId] = temp;
+        // associação direta com id e indice. o id do atleta vai ser sua posição no array
+        // garante busca direta para cruzamento de dados O(1)
+        (*lista)[temp.atletaId] = temp;
     }
+    return num; // retorna o tamanho do bios lido
+}
 
-    // cálculo da idade e cópia do gênero
+
+// cruza results com bios e calcula idade e gênero, cruzamento feito usando ids mapeados
+void cruzar_Dados(int cont, Atleta* competidores, biosAtleta* lista){
     for(int k = 0, y = 0; k < cont; k++, y++){
         if(strcmp(lista[competidores[y].Id].ano, "Vazio") == 0){
             competidores[y].idade = 0;
-            strcpy(competidores[y].genero,lista[competidores[y].Id].genero);
+            strcpy(competidores[y].genero, lista[competidores[y].Id].genero);
         }
         else{
             competidores[y].idade =
                 competidores[y].anoOlimpiada -
                 atoi(lista[competidores[y].Id].ano);
-            strcpy(competidores[y].genero,lista[competidores[y].Id].genero);
+            strcpy(competidores[y].genero, lista[competidores[y].Id].genero);
         }
     }
+}
 
-    // ordena por id para remoção de duplicados
+
+// comparadores usados no qsort
+static int compara1(const void* a, const void* b){// ordena por idade, da maior pra menor
+    const Atleta* ia = (Atleta*)a;
+    const Atleta* ib = (Atleta*)b;
+    return ib->idade - ia->idade;
+}
+
+static int compara2(const void* a, const void* b){// ordena pelo id e depois pela idade
+    const Atleta* ia = (Atleta*)a;
+    const Atleta* ib = (Atleta*)b;
+    if(ia->Id - ib->Id == 0){
+        return ib->idade - ia->idade;// assim deixa blocos de pessoas do mesmo id e com a idade de sua edição, assim deixando a edição em que foi mais
+        // velho no topo
+    }
+    return ia->Id - ib->Id;
+}
+
+
+// ordena, remove duplicados e retorna novo tamanho
+int Ordena_Limpa_Ordena(Atleta* competidores,int cont){ 
+
+    // agrupa atletas iguais por id
     qsort(competidores, cont, sizeof(Atleta), compara2);
 
     int ZonaSeg = 1;
 
-    // remove atletas repetidos mantendo o mais velho
+    // remove duplicados com id igual, mantendo o apenas o velho
     for(int k = 1; k < cont; k++){
         if (competidores[k].Id - competidores[k-1].Id == 0){}
         else{
@@ -276,17 +304,22 @@ int main(){
         }
     }
 
-    // ajusta o tamanho final do vetor
+    // ajusta tamanho final
     competidores = realloc(competidores, sizeof(Atleta) * ZonaSeg);
 
-    // ordena definitivamente por idade
+    // ordena definitivamente por idade, sempre com Ids diferentes, garantindo sempre os mais velhos definitivos
     qsort(competidores, ZonaSeg, sizeof(Atleta), compara1);
 
-    // vetores finais por gênero
-    Atleta homens[10];
-    Atleta mulheres[10];
+    return ZonaSeg; // retorna o tamanho do atual array que foi realocado
+}
 
-    // seleção dos top 10 por gênero
+
+// separa e imprime os 10 mais velhos por gênero
+void separador(Atleta* competidores, int ZonaSeg){
+    Atleta homens[10]; // array para armazenar 10 homens
+    Atleta mulheres[10]; // array para as 10 mulheres
+
+    // peneira de separação
     for(int i = 0, h = 0, m = 0; i < ZonaSeg; i++){
         if(h < 10 && strcmp(competidores[i].genero, "Male") == 0){
             homens[h++] = competidores[i];
@@ -299,33 +332,54 @@ int main(){
         }
     }
 
-    // impressão dos homens
+    // impressão final
     printf("\n->Homens\n");
     for (int i = 0; i < 10; i++) {
         printf("Atleta: %s  Esporte: %s  Idade: %d  Sexo: Masculinho  Ano participado: %d\n",
-               homens[i].atletaNome,
-               homens[i].esporte,
-               homens[i].idade,
-               homens[i].anoOlimpiada);
+               homens[i].atletaNome, homens[i].esporte,
+               homens[i].idade, homens[i].anoOlimpiada);
     }
     
-    // impressão das mulheres
     printf("\n->Mulheres\n");
     for (int i = 0; i < 10; i++) {
         printf("Atleta: %s  Esporte: %s  Idade: %d  Sexo: Feminino  Ano participado: %d\n",
-               mulheres[i].atletaNome,
-               mulheres[i].esporte,
-               mulheres[i].idade,
-               mulheres[i].anoOlimpiada);
+               mulheres[i].atletaNome, mulheres[i].esporte,
+               mulheres[i].idade, mulheres[i].anoOlimpiada);
     }
+}
 
-    // debug simples de leitura
-    printf("\n%d", cont);
 
-    fclose(arq);   // fecha results.csv
-    fclose(bios);  // fecha bios.csv
+// libera toda a memória alocada anteriormente
+void libera_Sistema(int pos, int num, Atleta* competidores, biosAtleta* lista){
+    if (competidores != NULL) {
+        free(competidores);
+    }
+    if (lista != NULL) {
+        free(lista);
+    }
+}
 
-    printf("\n\nPresione ENTER para fechar...");
-    getchar(); // pausa o console
-    return 0;
+
+// função de gestão da questão
+void gestao_q1(FILE* arq, FILE* bios){
+    Atleta* catalogo;
+
+    // carrega participações
+    int pos = gerarLista_Atletas(&catalogo, arq);
+
+    // carrega bios
+    biosAtleta* dados;
+    int liberarBios = dados_Bios(&dados, bios);
+
+    // cruza dados
+    cruzar_Dados(pos, catalogo, dados);
+
+    // ordena e remove duplicados
+    pos = Ordena_Limpa_Ordena(catalogo, pos);
+
+    // imprime resultado final
+    separador(catalogo, pos);
+
+    // libera memória
+    libera_Sistema(pos, liberarBios, catalogo, dados);
 }
