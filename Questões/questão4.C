@@ -23,16 +23,18 @@
  char generos[MAX_ID]; 
 
 //funcao que lê o csv para preencher o mapa de generos
-void mapear_generos() {
+void mapear_generos(FILE *arquivoBios) {
     //zera o array para evitar lixo
     memset(generos, 0, sizeof(generos));
 
-    FILE *arquivo = fopen("bios.csv", "r");
+    //definir e resetar o arquivo apra iterar do zero
+    FILE *arquivo = arquivoBios;
     //se o arquivo não for encontrado exibe isso no print
     if( arquivo == NULL) {
         printf("O arquivo não foi encontrado");
         exit(1);
     }
+    rewind(arquivo);
 
     char linha[4096];
     fgets(linha, 4096, arquivo); //pula o cabecalho
@@ -114,24 +116,26 @@ void mapear_generos() {
         }
         //while acaba
     }
-    fclose(arquivo);
+    //fclose(arquivo);
 }
 
 
 
 //responsavel por iterar pelo csv e pelo array para contar os medalhistas
-void contar_medalhistas(char *pais_alvo, int *resultado) {
+void contar_medalhistas(char *pais_alvo, int *resultado, FILE *arquivoResultados) {
     //o primeiro indice conta as medalhas para homens e o segundo para mulheres
     //define como 0 para limpar lixo ou resetar e garantir funcionamento do imcremento
     resultado[0] = 0;
     resultado[1] = 0;
 
-    FILE *arquivo = fopen("results.csv", "r");
+    //definir e resetar o arquivo apra iterar do zero
+    FILE *arquivo = arquivoResultados;
     if (arquivo == NULL) {
         printf("Erro ao abrir results.csv\n");
         exit(1);
     }
-    
+    rewind(arquivo);
+
     char linha[4096]; 
     fgets(linha, 4096, arquivo); //pula o cabeçalho
 
@@ -243,7 +247,7 @@ void contar_medalhistas(char *pais_alvo, int *resultado) {
             }
         }
     }
-    fclose(arquivo);
+    //fclose(arquivo);
 }
 
 
@@ -325,9 +329,13 @@ char* converter_nome(char nome_pais[]) {
     return codigo_encontrado;
 }
 
-int main() {
+int main(FILE *arquivo_resultados, FILE *arquivo_bios) {
+    //defina endereçamento para abrir os csvs
+     FILE *arquivoResultados = arquivo_resultados;
+     FILE *arquivoBios = arquivo_bios;
+
     //preenche o array
-    mapear_generos();
+    mapear_generos(arquivoBios);
     
     int acumuladora = 0; //acumuladora que controla o loop
 
@@ -339,7 +347,7 @@ int main() {
         char NOC[5];
         char pais[50];
 
-        printf("Insira o nome em inglês do pais desejado, com escrita compativel ao nome do time do pais nas olimpiadas\n");
+        printf("Insira o nome em inglês do pais desejado, com escrita compativel ao nome do time do pais nas olimpiadas "ex: France" \n");
         fgets(pais, 50, stdin);
         //o fgets pega o \n, isso atrapalharia a comparação, então é preciso remover o \n
         //para isos usar o strcspn que percorre a string até achar o \n e transforma em \0
@@ -349,7 +357,7 @@ int main() {
 
         //se o país for inválido, o NOC será "NADA", então nem chama a função
         if (strcmp(NOC, "NADA")) { //se for invalido retorna 0 e não cai na condição
-            contar_medalhistas(NOC, placar); //usa o código NOC para identificar as medalhas
+            contar_medalhistas(NOC, placar, arquivoResultados); //usa o código NOC para identificar as medalhas
             printf("%s:\n %d medalhas para Homens, %d para mulheres \n", pais, placar[0], placar[1]);
         } else {
             //se retornar 0, o NOC é igual a "NADA", então sai do if e cai no else
