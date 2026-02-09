@@ -329,7 +329,7 @@ char* converter_nome(char nome_pais[]) {
     return codigo_encontrado;
 }
 
-int main(FILE *arquivo_resultados, FILE *arquivo_bios) {
+void gestao_q4(FILE *arquivo_resultados, FILE *arquivo_bios) {
     //defina endereçamento para abrir os csvs
      FILE *arquivoResultados = arquivo_resultados;
      FILE *arquivoBios = arquivo_bios;
@@ -347,7 +347,7 @@ int main(FILE *arquivo_resultados, FILE *arquivo_bios) {
         char NOC[5];
         char pais[50];
 
-        printf("Insira o nome em inglês do pais desejado, com escrita compativel ao nome do time do pais nas olimpiadas "ex: France" \n");
+        printf("Insira o nome em inglês do pais desejado, com escrita compativel ao nome do time do pais nas olimpiadas ex: France \n");
         fgets(pais, 50, stdin);
         //o fgets pega o \n, isso atrapalharia a comparação, então é preciso remover o \n
         //para isos usar o strcspn que percorre a string até achar o \n e transforma em \0
@@ -365,8 +365,4 @@ int main(FILE *arquivo_resultados, FILE *arquivo_bios) {
         }
         acumuladora++;
     }
-    
-    return 0;
 }
-
-
