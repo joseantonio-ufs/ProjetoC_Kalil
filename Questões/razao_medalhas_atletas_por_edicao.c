@@ -130,7 +130,7 @@ void entradaDosPaises(Pais arrayPais[]){
     //Entrada de dados dos países escolhidos e inicialização dos campos da struct
   printf("Escolha o 10 paises que voce almeija obter a razao: ");
   for(int i = 0;i<10;i++){
-    scanf(" %[^\n]", arrayPais[i].NOC);
+    scanf(" %[^\n] %[^\n] %[^\n] %[^\n] %[^\n] %[^\n] %[^\n] %[^\n] %[^\n] %[^\n]", arrayPais[0].NOC, arrayPais[1].NOC, arrayPais[2].NOC, arrayPais[3].NOC, arrayPais[4].NOC, arrayPais[5].NOC, arrayPais[6].NOC, arrayPais[7].NOC, arrayPais[8].NOC, arrayPais[9].NOC);
     arrayPais[i].numeroMedalhas = 0;
     arrayPais[i].numeroAtletas = 0;
   }
@@ -190,7 +190,7 @@ if(anoEncontrado==1){
 
     //Verificando se o número de atletas do país analisado é 0, pois, se for, isso implica que o país não participou daquela edição das Olimpiadas, l
     if(arrayPais[i].numeroAtletas == 0){
-      printf("O pais %s nao participou dessa edicao dos jogos olimpicos\n", arrayPais[i].NOC);
+      printf("Não houveram dados gerados para %d (NOC inexistente ou país ausente nessa edição)", arrayPais[i].NOC);
   }else{
     //Implementação dessa condicional só para formatar o zero e deixar o código visualmente mais agradável e compreensivo
     if(razao!=0){
