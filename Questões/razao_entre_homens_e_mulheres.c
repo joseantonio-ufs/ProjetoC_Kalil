@@ -358,10 +358,10 @@ void gestao_q4(FILE *arquivo_resultados, FILE *arquivo_bios) {
         //se o país for inválido, o NOC será "NADA", então nem chama a função
         if (strcmp(NOC, "NADA")) { //se for invalido retorna 0 e não cai na condição
             contar_medalhistas(NOC, placar, arquivoResultados); //usa o código NOC para identificar as medalhas
-            printf("%s:\n %d medalhas para Homens, %d para Mulheres \n", pais, placar[0], placar[1]);
+            printf("%s:\n %d medalhas para Homens, %d para Mulheres \n\n", pais, placar[0], placar[1]);
         } else {
             //se retornar 0, o NOC é igual a "NADA", então sai do if e cai no else
-            printf("Pais invalido\n");
+            printf("Pais invalido\n\n");
         }
         acumuladora++;
     }
