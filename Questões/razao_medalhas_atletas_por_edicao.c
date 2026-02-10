@@ -135,9 +135,9 @@ static void escrever(){// função para criação de arquivo que será escrito o
     }
     fprintf(f_script, "set terminal png size 1200,800\n");
     fprintf(f_script, "set output 'Grafico_Q3.png'\n");
-    fprintf(f_script, "set title \"Atleta Mais Velho por Modalidade\"\n");
-    fprintf(f_script, "set ylabel \"Idade (Anos)\"\n");
-    fprintf(f_script, "set xlabel \"Modalidade\"\n");// linhas de comando que o gnuplot usará sendo escritas no arquivo com fprintf
+    fprintf(f_script, "set title \"Razão do número de medalhas\"\n");
+    fprintf(f_script, "set ylabel \"Razão\"\n");
+    fprintf(f_script, "set xlabel \"Países\"\n");// linhas de comando que o gnuplot usará sendo escritas no arquivo com fprintf
     fprintf(f_script, "set grid y\n");
     fprintf(f_script, "set style data histograms\n");
     fprintf(f_script, "set style fill solid 1.0 border -1\n");
