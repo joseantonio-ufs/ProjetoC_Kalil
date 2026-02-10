@@ -330,12 +330,22 @@ void separador(Atleta* competidores, int ZonaSeg){
             i = ZonaSeg;
         }
     }
+
+    if(homens[8].atletaNome[0] == '"'){
     char corretiva[100];
     for (int i = 1; i < strlen(homens[8].atletaNome) - 1; i++){ // corrige o decimo nome com aspas para dar problema na plotagem gráfica
         corretiva[i-1] = homens[8].atletaNome[i];
         corretiva[i] = '\0';
     }
     strcpy(homens[8].atletaNome, corretiva);
+    }else{
+    char corretiva[100];
+    for (int i = 1; i < strlen(homens[9].atletaNome) - 1; i++){ // corrige o decimo nome com aspas para dar problema na plotagem gráfica
+        corretiva[i-1] = homens[9].atletaNome[i];
+        corretiva[i] = '\0';
+    }
+    strcpy(homens[8].atletaNome, corretiva);
+    }
 
     // impressão final
     printf("\n->Homens\n");
