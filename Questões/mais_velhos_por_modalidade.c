@@ -41,9 +41,9 @@ typedef struct{
 // Esse parser é responsável por realizar a leitura de cada linha do results.csv, de forma manual, utilizando das posições das vírgulas para evitar erros com campos entre aspas
 Atleta Parser(char str[]){
 
-  // note que se a posição de uma virgula mais 1 for igual a da próxima, então o campo é vazio
+    // note que se a posição de uma virgula mais 1 for igual a da próxima, então o campo é vazio
 
-     // Vetor para armazenar as posições das vírgulas relevantes, mapeamos para saber onde começa e onde termina um campo
+    // Vetor para armazenar as posições das vírgulas relevantes, mapeamos para saber onde começa e onde termina um campo
     int posVirgulas[10];
     int num_Virgulas_lidas = 0;
     int camposLidos = 0; // itera a posição das vírgulas
@@ -62,7 +62,7 @@ Atleta Parser(char str[]){
         }
     }
  
-    Atleta comp; // cra-se o objeto atleta, com todas as informações necessárias, que será retornado pela função
+    Atleta comp; // cria-se o objeto atleta, com todas as informações necessárias, que será retornado pela função
 
     // Extrai o ano da edição olímpica, correspondentes aos primeiros 4 caracteres de cada linha do results.csv
     char ano[5];
@@ -131,7 +131,7 @@ biosAtleta ParserBios(char str[]){
         }
     }
  
-    biosAtleta comp;// o mapeamento de ID e idade
+    biosAtleta comp;// o mapeamento de ID e nascimento
 
     //Esse campo extrai o id do atleta, que esta localizado entre as linhas 6 e 7, e, após essa extração, converte ele de string para inteiro
     char Id[10];
@@ -275,9 +275,10 @@ void maisVelhos(Atleta array[], int zonaSeg, FILE* arq){// função que recebe o
             }
             // posSegura indica exatamente a quantidade de elementos diferentes
 
-        printf("\nAtleta: %s  Idade na edição: %d  Olimpíadas participadas na história: %d", array[j].atletaNome, array[j].idade, posSegura); 
+        printf("\nAtleta: %s | Idade na edicao: %d | Olimpiadas participadas na historia: %d", array[j].atletaNome, array[j].idade, posSegura); 
         // imprimimos na tela a idade do atleta no ano e o número de edições participadas na história
     }
+    printf("\n");
 }
 
 
@@ -357,10 +358,10 @@ GuardaListaBios informacoesAtletas(FILE* bios){// função do tipo do struct que
 void exibir(GuardaListaAtleta lista, FILE* arq){/// Função que exibe os dados processado e guardados nos arrays
     for (int i = 0; i < lista.contador; i++) {
             if (lista.array[i].idade < 0){
-                printf("\n%d - Esporte: %s  Nome: %s  Idade: Sem idade  Ano: %d  Id:  %d\n", i, lista.array[i].esporte, lista.array[i].atletaNome, lista.array[i].ano, lista.array[i].atletaId);
+                printf("\n%d - Esporte: %s | Nome: %s | Idade: Sem idade | Ano: %d | Id:  %d\n", i, lista.array[i].esporte, lista.array[i].atletaNome, lista.array[i].ano, lista.array[i].atletaId);
             }
             else
-            printf("\n%d - Esporte: %s  Nome: %s  Idade: %d  Ano: %d  Id:  %d\n", i+1, lista.array[i].esporte, lista.array[i].atletaNome, lista.array[i].idade, lista.array[i].ano, lista.array[i].atletaId);
+            printf("\n%d - Esporte: %s | Nome: %s | Idade: %d | Ano: %d | Id:  %d\n", i+1, lista.array[i].esporte, lista.array[i].atletaNome, lista.array[i].idade, lista.array[i].ano, lista.array[i].atletaId);
         }
 
         maisVelhos(lista.array, lista.contador, arq); // exibe os mais velhos da ediçaõ e diz quanstas participaram
@@ -407,21 +408,120 @@ void peneira(GuardaListaAtleta* lista, GuardaListaBios* lista2, int AnoEscolha){
     qsort(lista->array, segundaZonaSeg, sizeof(Atleta), compara3);// agora só com o mais velho de cada esporte deixamos em ordem descrescente para deixar organizado na saída
 }
 
+//Função responsávelpor criar o arquivo de configuração do Gnuplot
+static void escrever(){
+    FILE* f_script = fopen("script.gp", "w");//Responsável por criar e abrir o arquivo de script
+    if(f_script == NULL){
+        puts("Erro ao gerar arquivo .gp");
+        return;
+    }
 
-void gestao_q2(FILE* arq, FILE* bios){ // função de getsão princiapal. comom o código foi quebrado em blocos de funções, essa aqui organiza tudo e chama
+    //Comandos responsáveis por configurar o Gnuplot para gerar o gráfico
+
+    fprintf(f_script, "set terminal png size 1200,800\n"); //Define formato PNG e tamanho
+    fprintf(f_script, "set output 'Grafico_Q3.png'\n"); //Nome do arquivo de saída
+    fprintf(f_script, "set title \"Atleta Mais Velho por Modalidade\"\n"); 
+    fprintf(f_script, "set ylabel \"Idade (Anos)\"\n"); //Rótulo do eixo Y
+    fprintf(f_script, "set xlabel \"Modalidade\"\n"); //Rótulo de eixo X
+    fprintf(f_script, "set grid y\n"); //Adiciona linhas de grade no eixo Y
+    fprintf(f_script, "set style data histograms\n"); //Define que o estilo é histograma
+    fprintf(f_script, "set style fill solid 1.0 border -1\n"); //Preenchimento sólido das barras
+    fprintf(f_script, "set boxwidth 0.7\n"); //Largura das barras
+    fprintf(f_script, "set xtics rotate by -90 scale 0\n"); //Rotaciona os nomes no eixo X em 90 graus
+    fprintf(f_script, "set bmargin 10\n");  //Aumenta a margem inferior para caber os nomes
+    fprintf(f_script, "set yrange [0:*]\n"); //Garante que o eixo Y comece no zero
+   
+    //Aqui, ele utiliza a coluna 2 para a altura e a coluna 1 para os nomes
+    fprintf(f_script, "plot 'dados_q3.dat' using 2:xtic(1) notitle linecolor rgb \"#2980b9\"\n");
+    fclose(f_script); //Fecha o arquivo de script
+}
+
+static void gerar_grafico_gnuplot(GuardaListaAtleta lista) {
+    escrever(); //Chama a função que cria o arquivo
+    FILE *dados = fopen("dados_q3.dat", "w"); //Cria o arquivo que conterá os números
+    if (dados == NULL) {
+        printf("Não abriu arquivo! Sem gráfico nessa\n");
+        return;
+    }
+   
+    //Gravando os dados da struct no arquivo de texto
+    for (int i = 0; i < lista.contador; i++) {
+            //Aqui, o fprintf coloca o nome entre as aspas para evitar erros com relação a nomes compostos
+            fprintf(dados, "\"%s\" %d\n", lista.array[i].atletaNome, lista.array[i].idade);
+    }
+    fclose(dados); 
+
+    printf("\nProcessando grafico...\n");
+    
+    //Tentando executar o Gnuplot no sistema operacional
+    int status = system("gnuplot script.gp");
+
+    if (status == 0) {
+         //Gnuplot rodou sem erros
+         printf("Grafico gerado!\n");
+         printf("Deseja abrir o grafico? Y/N\n");
+         char c;
+         scanf(" %c", &c);
+         while(c != 'N'){
+            if(c == 'Y'  || c =='y'){
+                printf("\nAbrindo...");
+                sleep(2);//Da uma pausa de 2 segundos antes de abrir o gráfico
+                // Bloco de portabilidade: identifica o comando correto para cada SO
+                #ifdef _WIN32
+                system("start Grafico_Q3.png"); //Windows
+                c = 'N';    // Windows
+                #elif __APPLE__
+                    system("open Grafico_Q3.png"); //macOS
+                    c = 'N';     // macOS
+                #elif __linux__
+                    system("xdg-open Grafico_Q3.png"); //Linux 
+                    c = 'N'; // Linux (Ubuntu, Debian, Fedora...)
+                #elif __FreeBSD__
+                    system("xdg-open Grafico_Q3.png");
+                    c = 'N'; // FreeBSD
+                #else
+                    printf("Sistema nao identificado. Abra 'Grafico_Q3.png' manualmente.\n");
+                    c = 'N';
+                #endif
+            }
+            else{
+                printf("Inválido\n");
+                printf("Digite Novamente\n");
+                char d;
+                scanf(" %c", &d);
+                c = d;
+            }
+         }
+    }
+    // Limpeza: Deleta os arquivos auxiliares para não sujar a pasta do projeto
+    sleep(1);
+    remove("dados_q3.dat");
+    remove("script.gp");
+}
+
+void gestao_q3(FILE* arq, FILE* bios){ // função de gestão princiapal. como o código foi quebrado em blocos de funções, essa aqui organiza tudo e chama
 
     int AnoEscolha;
     printf("Escolha o ano para busca: ");// deixamos o usuário escolher o ano
     scanf("%d", &AnoEscolha);
+    printf("\nProcessando dados...");
+    sleep(1);
+    printf("\n.");
+    sleep(1);
+    printf("\n. .");
+    sleep(1);
+    printf("\n. . .\n");
+    sleep(1);
+
     
-    GuardaListaAtleta lista = CriarSelecao(AnoEscolha, arq); // criamos a struct que guarda o ponteiro do array e guardamos tudo dentro dela
+    GuardaListaAtleta lista = CriarSelecao(AnoEscolha, arq); // ciramos a struct que guarda o ponteiro do array e guardamos tudo dentro dela
     if (lista.contador == 0){
-        printf("\n\nNenhum dado encontrado desta edição -> %d\n\n\n", AnoEscolha);
+        printf("\n\nNenhum dado encontrado desta edicao -> %d\n\n\n", AnoEscolha);
         return;
-    }// se o contado retornar 0, quer dizer que nenhum jogado foi encontrado no ano, logo o ano não é olímpico
+    }// se o contado retornar 0 quer dizer que nenhum jogado foi encontrado no ano, logo o ano não é olímpico
 
     GuardaListaBios listagem = informacoesAtletas(bios); // guardamos a lista bios
     peneira(&lista, &listagem, AnoEscolha); // passamos tudo para peneira e processamos os dados
-
     exibir(lista, arq); // por fim exibimos o que foi encontrado
+    gerar_grafico_gnuplot(lista);
 }
