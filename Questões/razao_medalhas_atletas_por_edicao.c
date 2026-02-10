@@ -4,7 +4,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "arquivo.h"   // ligando ao .h
-
+#include <unistd.h>
+#include <locale.h> // Necessário para forçar o ponto decimal
 //Aqui, definimos a struct de Atleta, que contem campos específicos os quais serão usados posteriormente na implementação da lógica do código
 typedef struct{
   int ano;
@@ -125,6 +126,87 @@ int comparaPaises(const void* a, const void* b){
       }
 }
 
+
+static void escrever(){// função para criação de arquivo que será escrito os comandos do gnuplot e, criando o .gp
+    FILE* f_script = fopen("script.gp", "w");
+    if(f_script == NULL){
+        puts("Erro ao gerar arquivo .gp");// verifica de se fato criou
+        return;
+    }
+    fprintf(f_script, "set terminal png size 1200,800\n");
+    fprintf(f_script, "set output 'Grafico_Q3.png'\n");
+    fprintf(f_script, "set title \"Atleta Mais Velho por Modalidade\"\n");
+    fprintf(f_script, "set ylabel \"Idade (Anos)\"\n");
+    fprintf(f_script, "set xlabel \"Modalidade\"\n");// linhas de comando que o gnuplot usará sendo escritas no arquivo com fprintf
+    fprintf(f_script, "set grid y\n");
+    fprintf(f_script, "set style data histograms\n");
+    fprintf(f_script, "set style fill solid 1.0 border -1\n");
+    fprintf(f_script, "set boxwidth 0.7\n");
+    fprintf(f_script, "set xtics rotate by -90 scale 0\n");
+    fprintf(f_script, "set bmargin 10\n"); 
+    fprintf(f_script, "set yrange [0:*]\n");
+    fprintf(f_script, "plot 'dados_q3.dat' using 2:xtic(1) notitle linecolor rgb \"#2980b9\"\n");
+    fclose(f_script); // fechamos o arquivo
+}
+
+static void gerar_grafico_gnuplot(Pais arrayPais[]) {
+    // Força o uso de .  para decimais porque o gnuplot, pois ele só aceita número es inglês e não em português com ,
+    setlocale(LC_NUMERIC, "C");
+
+    escrever();
+    FILE *dados = fopen("dados_q3.dat", "w");// abrimos o .dat que receberá os dados da lista salva e usará patra o gráfico
+    if (dados == NULL) {
+        printf("Não abriu arquivo! Sem gráfico nessa\n");// verifica se criou de fato
+        return;
+    }
+
+    for (int i = 0; i < 10; i++) {
+        float razao = 0.0;
+        if (arrayPais[i].numeroAtletas > 0) {
+            razao = (float)arrayPais[i].numeroMedalhas / (float)arrayPais[i].numeroAtletas; // verifica se o numero de atletas é maior que 0 para não realizar divisão por 0 e quebrar tudo
+        }
+        fprintf(dados, "\"%s\" %.3f\n", arrayPais[i].NOC, razao); // salva .dat os dados necessários
+    }
+    fclose(dados); // fechasse o arquivo
+    
+    printf("\nProcessando grafico...\n");
+    
+    
+    int status = system("gnuplot script.gp"); // verifica que o gp esta na pasta e retorna 0 se esta
+
+    if (status == 0) { 
+         printf("Grafico gerado!\n");
+         printf("Deseja abrir o grafico? Y/N\n");
+         char c;
+         scanf(" %c", &c);
+         while(c != 'N' && c != 'n'){
+            if(c == 'Y'  || c =='y'){
+                printf("\nAbrindo...\n");// verifica se o usuário quer abrir e abre caso sim
+                #ifdef _WIN32 
+                    system("start Grafico_Q3.png");
+                #elif __APPLE__
+                    system("open Grafico_Q3.png");// diretivas para abrir a depender do os usando
+                #else
+                    // Linux / FreeBSD
+                    system("xdg-open Grafico_Q3.png");
+                #endif
+                 remove("dados_q3.dat");
+                 remove("script.gp"); // apagasse o que foi criado
+                return; 
+            }
+            else{
+                printf("Inválido\n");
+                printf("Digite Novamente\n"); // continua o lop se o usuario digitar algo diferente de Y ou N
+                scanf(" %c", &c); // Lê direto na variável c
+            }
+         }
+    } 
+    sleep(1); // delay para permitir o os apagar
+    remove("dados_q3.dat"); // remove independente de gerar gráfico
+    remove("script.gp");
+}
+
+
 //Criando a função que será utilizada para o usuário poder dizer quais países ele quer obter informações acerca da razão entre o número de medalhas e o de atletas
 void entradaDosPaises(Pais arrayPais[]){
     //Entrada de dados dos países escolhidos e inicialização dos campos da struct
@@ -144,8 +226,9 @@ void incrementadorMedalhasEAtletas(FILE *arquivo){
   //Essa parte irá servir para garantir que não hajam atletas repetidos para um mesmo país 
   int IdAnterior = 0;
    //Entrada do ano de determinada Olimpíada
-  printf("Digite o ano escolhido: ");
+  printf("\nDigite o ano escolhido: ");
   scanf("%d", &anoEscolhido);
+  printf("\n");
   
   //Implementação da lógica principal do código nesse bloco
   char linha[2000];
@@ -218,5 +301,7 @@ void gestao_q2(FILE *results){
   
   //Chamando a função responsável por capturar os dados e exibí-los no terminal
   capturaDeDados(listaDePaises);
+
+  gerar_grafico_gnuplot(listaDePaises);
   
 }
