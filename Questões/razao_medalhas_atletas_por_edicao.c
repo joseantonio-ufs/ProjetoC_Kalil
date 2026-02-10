@@ -118,6 +118,15 @@ int comparaPaises(const void* a, const void* b){
         razao2 = (float)p2->numeroMedalhas/(float)p2->numeroAtletas;
       }
 
+      if(p1->numeroAtletas == 0){
+        razao1 = -1;
+      }
+
+      if(p2->numeroAtletas == 0){
+        razao2 = -1;
+      }
+
+
       //Função ordenação em ordem decrescente
       if(razao1>razao2){
         return -1;
@@ -195,7 +204,7 @@ static void gerar_grafico_gnuplot(Pais arrayPais[]) {
                 return; 
             }
             else{
-                printf("Inválido\n");
+                printf("Invalido\n");
                 printf("Digite Novamente\n"); // continua o lop se o usuario digitar algo diferente de Y ou N
                 scanf(" %c", &c); // Lê direto na variável c
             }
@@ -208,18 +217,29 @@ static void gerar_grafico_gnuplot(Pais arrayPais[]) {
 
 
 //Criando a função que será utilizada para o usuário poder dizer quais países ele quer obter informações acerca da razão entre o número de medalhas e o de atletas
-void entradaDosPaises(Pais arrayPais[]){
+int entradaDosPaises(Pais arrayPais[]){
     //Entrada de dados dos países escolhidos e inicialização dos campos da struct
-  printf("Escolha o 10 paises que voce almeija obter a razao: Exemplo de entrada: [ FRA CHN CRC DEN CAN GBR GER GRE HKG HUN ]\n");
-  scanf(" %s %s %s %s %s %s %s %s %s %s", arrayPais[0].NOC, arrayPais[1].NOC, arrayPais[2].NOC, arrayPais[3].NOC, arrayPais[4].NOC, arrayPais[5].NOC, arrayPais[6].NOC, arrayPais[7].NOC, arrayPais[8].NOC, arrayPais[9].NOC);
-  for(int i = 0;i<10;i++){
-    arrayPais[i].numeroMedalhas = 0;
-    arrayPais[i].numeroAtletas = 0;
-  }
+  printf("Escolha o 10 paises que voce almeija obter a razao: Exemplo de entrada:  FRA CHN CRC DEN CAN GBR GER GRE HKG HUN (coloque nesse formato, todos na mesma linha para facilitar) \n");
+  int i = 0;
+    // O loop continua até que tenhamos preenchido exatamente as 10 posições
+    while (i < 10) {
+        //fica lendo o que ficou no buffer
+        if (scanf("%s", arrayPais[i].NOC) == 1) {
+            arrayPais[i].numeroMedalhas = 0;
+            arrayPais[i].numeroAtletas = 0;
+            i++; 
+        } else {
+            // Se algo der muito errado ele finaliza 
+            printf("\nInvalido\n");
+            return 0;
+        }
+    }
+    
+    return 1; // Sucesso ao preencher os 10
 }
 
 //Criando a função que contem o lógica principal do programa, que irá servir para incrementar o contador de medalhas e de atletas para cada item da lista de Paises
-void incrementadorMedalhasEAtletas(FILE *arquivo){
+int incrementadorMedalhasEAtletas(FILE *arquivo){
   //Criando variáveis que serão utilizadas futuramente na lógica do código
   int anoEscolhido;
   int analisandoAno;
@@ -231,6 +251,7 @@ void incrementadorMedalhasEAtletas(FILE *arquivo){
   printf("\n");
   
   //Implementação da lógica principal do código nesse bloco
+  int ano_e_olimpico = 0;
   char linha[2000];
   fgets(linha, sizeof(linha), arquivo);
   while(fgets(linha, sizeof(linha), arquivo)!= NULL){
@@ -240,6 +261,7 @@ void incrementadorMedalhasEAtletas(FILE *arquivo){
     //Criando um atleta geral, que servirá implementar a lógica do Parser, usado para ler cada linha do arquivo de maneira eficiente, capturando apenas os campos necessários
      Atleta AtletaGeral = Parser(linha);
     if(analisandoAno==anoEscolhido){
+      ano_e_olimpico++;
       //Ele muda o valor de anoEncontrado para um, que será utilizado em uma condicional mais para frente do código para que ele possa imprimir todas as informações referentes às razões, visto que se tivesse continuado zero, o ano seria tido como um em que não houve Olimpiada
       anoEncontrado = 1;
       for(int i = 0; i<10; i++){
@@ -258,6 +280,11 @@ void incrementadorMedalhasEAtletas(FILE *arquivo){
         }
     }
   }
+  if(ano_e_olimpico == 0){
+    printf("\nAno analisado nao e olimpico\n");
+    return 0;
+  }
+  return 1;
 }
 
 //Implementando função que vai chamar as funções "comparaPaises" e "comparaPaises2" para realizar a ordenação da lista de paises com base na razao, e, após isso, vai realizar o exibição dos dados de cada pais escolhido individualmente
@@ -273,7 +300,7 @@ if(anoEncontrado==1){
 
     //Verificando se o número de atletas do país analisado é 0, pois, se for, isso implica que o país não participou daquela edição das Olimpiadas, l
     if(arrayPais[i].numeroAtletas == 0){
-      printf("Não houveram dados gerados para %s (NOC inexistente ou pais ausente nessa edicao)", arrayPais[i].NOC);
+      printf("Nao houveram dados gerados para %s (NOC inexistente ou pais ausente nessa edicao)\n", arrayPais[i].NOC);
   }else{
     //Implementação dessa condicional só para formatar o zero e deixar o código visualmente mais agradável e compreensivo
     if(razao!=0){
@@ -293,12 +320,17 @@ void gestao_q2(FILE *results){
       //Aqui ocorre a abertura do arquivo results.csv e o teste para confirmar que o arquivo abriu mesmo 
 
   //Chamando a função responsável do permitir a leitura dos países e atribuí-los aos campos da listaDePaises
-  entradaDosPaises(listaDePaises);
+  int leu_certo = entradaDosPaises(listaDePaises);
 
+  if (leu_certo == 0){
+    printf("\nEncerrando questao");
+    return;
+  }
 
   //Chamando a função responsável pela lógica principal do código de incrementação do número de medalhas e de atletas
-  incrementadorMedalhasEAtletas(results);
-  
+  int anoOlimpico = incrementadorMedalhasEAtletas(results);
+  if (anoOlimpico == 0){
+  return;}
   //Chamando a função responsável por capturar os dados e exibí-los no terminal
   capturaDeDados(listaDePaises);
 
