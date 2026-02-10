@@ -16,14 +16,14 @@ typedef struct {
     int Id; // id único do atleta
     int anoOlimpiada; // ano da edição olímpica 
     int idade; // idade calculada posteriormente com o cruzamento com o bios.csv
-    char genero[15]; // genero atribuido, baseado no segundo campo do nbios.csv
+    char genero[30]; // genero atribuido, baseado no segundo campo do nbios.csv
 } Atleta;
 
 // Struct do tipo biosAtleta para auxiliar a cruzar dados biográficos do atleta
 typedef struct {
     char ano[10];  // ano de nascimento
     int atletaId; // id do atleta
-    char genero[10];// genero que será pasado para o atleta
+    char genero[30];// genero que será pasado para o atleta
 } biosAtleta;
 
 
@@ -33,7 +33,6 @@ static Atleta Parser(char str[]){ // static para isolar só para essa questão
     // note que se a posição de uma virgula mais 1 for igual a da próxima, então o campo é vazio
 
     int posVirgulas[10];  // Vetor para armazenar as posições das vírgulas relevantes, mapeamos para saber onde começa e onde termina um campo
-    int posVirgulas[10];
     int num_Virgulas_lidas = 0;   // usado para validar linhas incompletas
     int camposLidos = 0; // itera a posição das vírgulas
     int aspas = 0; // espécie de interruptor que impede salvar posição de vírgulas dentro de campos. por exemplo 
@@ -131,7 +130,7 @@ static biosAtleta ParserBios(char str[]){ // static para isolar só para essa qu
     // extrai o gênero
     char sexo[15];
     if(posVirgulas[0] + 1 == posVirgulas[1]){
-        strcpy(comp.genero, "Assexual");
+        strcpy(comp.genero, "Sem genero encontrado");
     }
     else{
         for (int i = posVirgulas[0] + 1, z = 0; i < posVirgulas[1]; i++, z++){
@@ -313,11 +312,11 @@ int Ordena_Limpa_Ordena(Atleta* competidores,int cont){
     return ZonaSeg; // retorna o tamanho do atual array que foi realocado
 }
 
-
+Atleta homens[10]; // array para armazenar 10 homens
+Atleta mulheres[10];// criadas globalmente para servir pra a plotagem de gráfico
 // separa e imprime os 10 mais velhos por gênero
 void separador(Atleta* competidores, int ZonaSeg){
-    Atleta homens[10]; // array para armazenar 10 homens
-    Atleta mulheres[10]; // array para as 10 mulheres
+     // array para as 10 mulheres
 
     // peneira de separação
     for(int i = 0, h = 0, m = 0; i < ZonaSeg; i++){
@@ -331,18 +330,24 @@ void separador(Atleta* competidores, int ZonaSeg){
             i = ZonaSeg;
         }
     }
+    char corretiva[100];
+    for (int i = 1; i < strlen(homens[8].atletaNome) - 1; i++){ // corrige o decimo nome com aspas para dar problema na plotagem gráfica
+        corretiva[i-1] = homens[8].atletaNome[i];
+        corretiva[i] = '\0';
+    }
+    strcpy(homens[8].atletaNome, corretiva);
 
     // impressão final
     printf("\n->Homens\n");
     for (int i = 0; i < 10; i++) {
-        printf("Atleta: %s  Esporte: %s  Idade: %d  Sexo: Masculinho  Ano participado: %d\n",
+        printf("Atleta: %s | Esporte: %s | Idade: %d | Sexo: Masculinho | Ano participado: %d\n",
                homens[i].atletaNome, homens[i].esporte,
                homens[i].idade, homens[i].anoOlimpiada);
     }
     
     printf("\n->Mulheres\n");
     for (int i = 0; i < 10; i++) {
-        printf("Atleta: %s  Esporte: %s  Idade: %d  Sexo: Feminino  Ano participado: %d\n",
+        printf("Atleta: %s | Esporte: %s | Idade: %d | Sexo: Feminino | Ano participado: %d\n",
                mulheres[i].atletaNome, mulheres[i].esporte,
                mulheres[i].idade, mulheres[i].anoOlimpiada);
     }
@@ -360,26 +365,119 @@ void libera_Sistema(int pos, int num, Atleta* competidores, biosAtleta* lista){
 }
 
 
-// função de gestão da questão
+static void escrever(){
+    FILE* f_script = fopen("script.gp", "w");//Responsável por criar e abrir o arquivo de script
+    if(f_script == NULL){
+        puts("Erro ao gerar arquivo .gp");
+        return;
+    }
+
+    //Comandos responsáveis por configurar o Gnuplot para gerar o gráfico
+
+    fprintf(f_script, "set terminal png size 1200,800\n"); //Define formato PNG e tamanho
+    fprintf(f_script, "set output 'Grafico_Q3.png'\n"); //Nome do arquivo de saída
+    fprintf(f_script, "set title \"Atletas maisn velhos de todo os tempos\"\n"); 
+    fprintf(f_script, "set ylabel \"Idade\"\n"); //Rótulo do eixo Y
+    fprintf(f_script, "set xlabel \"Nomes\"\n"); //Rótulo de eixo X
+    fprintf(f_script, "set grid y\n"); //Adiciona linhas de grade no eixo Y
+    fprintf(f_script, "set style data histograms\n"); //Define que o estilo é histograma
+    fprintf(f_script, "set style fill solid 1.0 border -1\n"); //Preenchimento sólido das barras
+    fprintf(f_script, "set boxwidth 0.7\n"); //Largura das barras
+    fprintf(f_script, "set xtics rotate by -90 scale 0\n"); //Rotaciona os nomes no eixo X em 90 graus
+    fprintf(f_script, "set bmargin 10\n");  //Aumenta a margem inferior para caber os nomes
+    fprintf(f_script, "set yrange [0:*]\n"); //Garante que o eixo Y comece no zero
+   
+    //Aqui, ele utiliza a coluna 2 para a altura e a coluna 1 para os nomes
+    fprintf(f_script, "plot 'dados_q3.dat' using 2:xtic(1) notitle linecolor rgb \"#2980b9\"\n");
+    fclose(f_script); //Fecha o arquivo de script
+}
+
+static void gerar_grafico_gnuplot(Atleta* lista) {
+    escrever(); //Chama a função que cria o arquivo
+    FILE *dados = fopen("dados_q3.dat", "w"); //Cria o arquivo que conterá os números
+    if (dados == NULL) {
+        printf("Não abriu arquivo! Sem gráfico nessa\n");
+        return;
+    }
+   
+    //Gravando os dados da struct no arquivo de texto
+    for (int i = 0; i < 10; i++) {
+            //Aqui, o fprintf coloca o nome entre as aspas para evitar erros com relação a nomes compostos
+            fprintf(dados, "\"%s\" %d\n", homens[i].atletaNome, homens[i].idade);
+            fprintf(dados, "\"%s\" %d\n", mulheres[i].atletaNome, mulheres[i].idade);
+    }
+    fclose(dados); 
+
+    printf("\nProcessando grafico...\n");
+    
+    //Tentando executar o Gnuplot no sistema operacional
+    int status = system("gnuplot script.gp");
+
+    if (status == 0) {
+         //Gnuplot rodou sem erros
+         printf("Grafico gerado!\n");
+         printf("Deseja abrir o grafico? Y/N\n");
+         char c;
+         scanf(" %c", &c);
+         while(c != 'N'){
+            if(c == 'Y'  || c =='y'){
+                printf("\nAbrindo...");
+                sleep(2);//Da uma pausa de 2 segundos antes de abrir o gráfico
+                // Bloco de portabilidade: identifica o comando correto para cada SO
+                #ifdef _WIN32
+                system("start Grafico_Q3.png"); //Windows
+                c = 'N';    // Windows
+                #elif __APPLE__
+                    system("open Grafico_Q3.png"); //macOS
+                    c = 'N';     // macOS
+                #elif __linux__
+                    system("xdg-open Grafico_Q3.png"); //Linux 
+                    c = 'N'; // Linux (Ubuntu, Debian, Fedora...)
+                #elif __FreeBSD__
+                    system("xdg-open Grafico_Q3.png");
+                    c = 'N'; // FreeBSD
+                #else
+                    printf("Sistema nao identificado. Abra 'Grafico_Q3.png' manualmente.\n");
+                    c = 'N';
+                #endif
+                remove("dados_q3.dat");
+                remove("script.gp"); //apaga os arquivos depois de usados
+            }
+            else{
+                printf("Inválido\n");
+                printf("Digite Novamente\n");
+                char d;
+                scanf(" %c", &d);
+                c = d;
+            }
+         }
+    }
+    // Limpeza: Deleta os arquivos auxiliares para não sujar a pasta do projeto
+    sleep(1);
+    remove("dados_q3.dat");
+    remove("script.gp");// apaga mesmo que não gere om gráfico
+}
+
+// função de da questão
 void gestao_q1(FILE* arq, FILE* bios){
     Atleta* catalogo;
 
     // carrega participações
-    int pos = gerarLista_Atletas(&catalogo, arq);
+    int posicao = gerarLista_Atletas(&catalogo, arq);
 
     // carrega bios
     biosAtleta* dados;
     int liberarBios = dados_Bios(&dados, bios);
 
     // cruza dados
-    cruzar_Dados(pos, catalogo, dados);
+    cruzar_Dados(posicao, catalogo, dados);
 
     // ordena e remove duplicados
-    pos = Ordena_Limpa_Ordena(catalogo, pos);
+    posicao = Ordena_Limpa_Ordena(catalogo, posicao);
 
     // imprime resultado final
-    separador(catalogo, pos);
-
+    separador(catalogo, posicao);
+    gerar_grafico_gnuplot(catalogo);
     // libera memória
-    libera_Sistema(pos, liberarBios, catalogo, dados);
+    libera_Sistema(posicao, liberarBios, catalogo, dados);
 }
