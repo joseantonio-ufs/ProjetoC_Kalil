@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "arquivo.h"
+
+
 //Nota: pensei em abstrair o que há de enssencial entre os parsers nas funções e criar outra
 //função parser para chamar ela nas demais funções ao usar, mas pesquisando imaginei que isso
 //apesar de diminuir código escrito podria adicioanr complexidade de operações desnecessarias
@@ -10,6 +11,16 @@
 //personalizavel em funções que fazem coisas diferentes também complcairia desnecessariamente
 //também precisaria de estruturas de ponteiros e callbacks que podem ser evitados
 
+//estrutura auxiliar para armazenar os dados do gráfico
+struct DadosGrafico {
+    char pais[50];
+    int homens;
+    int mulheres;
+};
+
+//apesar de serem 4 paises, 5 elementos na lista por segurança
+struct DadosGrafico dados_globais[5]; 
+int indice_global = 0;
 
 //criar um array giagntesco armazenando os dados dos atletas foi mais conveniente aqui
 //se não aramzenar os dados no array seriam feitas muitas iterações desnecessárisa nos csvs
@@ -248,6 +259,9 @@ void contar_medalhistas(char *pais_alvo, int *resultado, FILE *arquivoResultados
         }
     }
     //fclose(arquivo);
+    dados_globais[indice_global].homens = resultado[0]; 
+    dados_globais[indice_global].mulheres = resultado[1]; 
+    indice_global++;
 }
 
 
@@ -320,6 +334,11 @@ char* converter_nome(char nome_pais[]) {
         //se o nome encontrado no csv for o desejado então a conversão foi definida
         if (strcmp(regiao_temp, nome_pais) == 0 || strcmp(notes_temp, nome_pais) == 0) {
             strcpy(codigo_encontrado, noc_temp);
+
+            //se NOC existir, salva na struct com os dados do gráfico
+            //posteriormente vai preencher com os dados e gerar o gŕafico
+            strcpy(dados_globais[indice_global].pais, nome_pais);
+
             break; //se acahr nçao precisa repetir o loop
         }
     }
@@ -328,6 +347,104 @@ char* converter_nome(char nome_pais[]) {
   
     return codigo_encontrado;
 }
+
+
+
+void desenhar_grafico() {
+    //se não tiverem dados não faz nada
+    if (indice_global == 0) {
+        printf("Nenhum dado foi coletado. O grafico nao sera gerado.\n");
+        return;
+    }
+
+    //cria arquivo de dados
+    FILE *dados = fopen("dados_q4.dat", "w");
+    if (dados == NULL) {
+        printf("Erro ao criar arquivo de dados!\n");
+        return;
+    }
+    
+    //cabeçalho
+    fprintf(dados, "Pais Homens Mulheres\n"); 
+    
+    //loop percorre array com os dados e guarda no arquivo de dados
+    for (int i = 0; i < indice_global; i++) {
+        fprintf(dados, "\"%s\" %d %d\n", 
+                dados_globais[i].pais, 
+                dados_globais[i].homens, 
+                dados_globais[i].mulheres);
+    }
+    fclose(dados);
+
+    //criando arquivo de script
+    FILE *script = fopen("script_q4.gp", "w");
+    if (script == NULL) {
+        printf("Erro ao criar script gnuplot!\n");
+        return;
+    }
+
+    fprintf(script, "set terminal png size 1000,700\n");
+    fprintf(script, "set output 'Grafico_Q4_Comparativo.png'\n"); //nome da imagem
+    fprintf(script, "set title \"Comparação de Medalhas: Homens vs Mulheres\"\n");
+    fprintf(script, "set ylabel \"Quantidade de Medalhas\"\n");
+    fprintf(script, "set xlabel \"País\"\n");
+    fprintf(script, "set grid y\n");
+    
+    //configuração para barras duplas
+    fprintf(script, "set style data histograms\n");
+    fprintf(script, "set style histogram cluster gap 1\n"); //serve para separar paises
+    fprintf(script, "set style fill solid 1.0 border -1\n");
+    fprintf(script, "set boxwidth 0.9\n");
+    fprintf(script, "set yrange [0:*]\n"); //começa do 0
+    fprintf(script, "set key top left autotitle columnheader\n"); //legenda automatica
+
+    
+    //coluna2 (homens) usa é azul (#2980b9)
+    //coluna3 (mulheres) é Vermelha (#c0392b)
+    //xtic pega o nome do país na coluna1
+    fprintf(script, "plot 'dados_q4.dat' using 2:xtic(1) title 'Homens' lc rgb \"#2980b9\", ");
+    fprintf(script, "'' using 3 title 'Mulheres' lc rgb \"#c0392b\"\n");
+    
+    fclose(script);
+
+    //gerando e abrindo o gráfico
+    printf("\nGerando grafico...\n");
+    printf("...\n");
+    printf("..\n");
+    printf(".\n");
+    int status = system("gnuplot script_q4.gp");
+
+    if (status == 0) {
+        printf("Grafico gerado com sucesso!\n");
+        printf("Deseja abrir o grafico? (Y/N): ");
+        char c;
+        scanf(" %c", &c);
+        
+        //opcao de escolha
+        if (c == 'S' || c == 's' || c == 'Y' || c == 'y') {
+            printf("Abrindo...\n");
+            printf("...\n");
+            printf("..\n");
+            printf(".\n");
+            //xdg open para linux e start para windows
+            #ifdef _WIN32
+                system("start Grafico_Q4_Comparativo.png");
+            #else
+                system("xdg-open Grafico_Q4_Comparativo.png");
+            #endif
+        } else {
+            printf("arquivo salvo\n");
+        }
+    } else {
+        printf("gnuplot não existe ou falhou\n");
+    }
+
+    //remove os aruqivos temporários
+    remove("dados_q4.dat");
+    remove("script_q4.gp");
+}
+
+
 
 void gestao_q4(FILE *arquivo_resultados, FILE *arquivo_bios) {
     //defina endereçamento para abrir os csvs
@@ -365,4 +482,5 @@ void gestao_q4(FILE *arquivo_resultados, FILE *arquivo_bios) {
         }
         acumuladora++;
     }
+    desenhar_grafico();
 }
