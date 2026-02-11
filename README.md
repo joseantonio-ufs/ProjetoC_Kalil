@@ -11,5 +11,4 @@ Questões escolhidas:
 
 🥇+🥉 Escolha 4 países e compare o número de mulheres e homens medalhistas ao longo de todas as edições para cada país escolhido. Se possível plote um gráfico destacando essa dinâmica entre cada país.  
 
-Nota: Para compilar entre no diretório da pasta onde está as questões e seus arquivos auxiliares e rode o seguinte comando
-Comando: gcc main.c comparacao_medalhas_por_genero.c mais_velhos_da_historia.c mais_velhos_por_modalidade.c razao_medalhas_atletas_por_edicao.c -o olimpiadas
+
