@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include "arquivo.h"
 
 //Nota: pensei em abstrair o que há de enssencial entre os parsers nas funções e criar outra
 //função parser para chamar ela nas demais funções ao usar, mas pesquisando imaginei que isso
